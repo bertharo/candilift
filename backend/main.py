@@ -15,6 +15,7 @@ from services.formatting_checker import FormattingChecker
 from services.impact_analyzer import ImpactAnalyzer
 from services.scoring_engine import ScoringEngine
 from services.recommendation_engine import RecommendationEngine
+from services.url_scraper import JobPostingScraper
 from models.analysis_result import AnalysisResult
 
 app = FastAPI(title="ATS Resume Reviewer", version="1.0.0")
@@ -36,6 +37,7 @@ formatting_checker = FormattingChecker()
 impact_analyzer = ImpactAnalyzer()
 scoring_engine = ScoringEngine()
 recommendation_engine = RecommendationEngine()
+url_scraper = JobPostingScraper()
 
 @app.get("/")
 async def root():
@@ -45,7 +47,8 @@ async def root():
 async def analyze_resume(
     resume_file: UploadFile = File(...),
     job_description: str = "",
-    job_description_file: Optional[UploadFile] = File(None)
+    job_description_file: Optional[UploadFile] = File(None),
+    job_url: Optional[str] = None
 ):
     """
     Analyze a resume against a job description for ATS compliance and optimization.
@@ -56,13 +59,22 @@ async def analyze_resume(
             raise HTTPException(status_code=400, detail="Resume must be PDF or DOCX format")
         
         # Parse job description
-        if job_description_file:
+        if job_url:
+            # Extract job description from URL
+            try:
+                job_info = url_scraper.scrape_job_posting(job_url)
+                job_description = job_info['description']
+                if not job_description.strip():
+                    raise HTTPException(status_code=400, detail="Could not extract job description from URL")
+            except Exception as e:
+                raise HTTPException(status_code=400, detail=f"Failed to scrape job posting: {str(e)}")
+        elif job_description_file:
             if not job_description_file.filename.lower().endswith(('.pdf', '.docx', '.txt')):
                 raise HTTPException(status_code=400, detail="Job description file must be PDF, DOCX, or TXT format")
             job_description = await parse_job_description_file(job_description_file)
         
         if not job_description.strip():
-            raise HTTPException(status_code=400, detail="Job description is required")
+            raise HTTPException(status_code=400, detail="Job description is required (provide text, file, or URL)")
         
         # Save resume to temporary file
         with tempfile.NamedTemporaryFile(delete=False, suffix=f".{resume_file.filename.split('.')[-1]}") as temp_file:

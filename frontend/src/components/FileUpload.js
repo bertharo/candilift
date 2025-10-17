@@ -6,6 +6,8 @@ const FileUpload = ({ onAnalysis }) => {
   const [resumeFile, setResumeFile] = useState(null);
   const [jobDescription, setJobDescription] = useState('');
   const [jobDescriptionFile, setJobDescriptionFile] = useState(null);
+  const [jobUrl, setJobUrl] = useState('');
+  const [inputMethod, setInputMethod] = useState('text'); // 'text', 'file', 'url'
   const [errors, setErrors] = useState({});
 
   const onDropResume = useCallback((acceptedFiles, rejectedFiles) => {
@@ -29,6 +31,8 @@ const FileUpload = ({ onAnalysis }) => {
     
     setJobDescriptionFile(acceptedFiles[0]);
     setJobDescription(''); // Clear text input when file is uploaded
+    setJobUrl(''); // Clear URL input when file is uploaded
+    setInputMethod('file');
   }, []);
 
   const { getRootProps: getResumeRootProps, getInputProps: getResumeInputProps, isDragActive: isResumeDragActive } = useDropzone({
@@ -58,7 +62,7 @@ const FileUpload = ({ onAnalysis }) => {
     if (!resumeFile) {
       newErrors.resume = 'Please upload your resume';
     }
-    if (!jobDescription.trim() && !jobDescriptionFile) {
+    if (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim()) {
       newErrors.jobDescription = 'Please provide a job description';
     }
     
@@ -74,6 +78,8 @@ const FileUpload = ({ onAnalysis }) => {
     
     if (jobDescriptionFile) {
       formData.append('job_description_file', jobDescriptionFile);
+    } else if (jobUrl.trim()) {
+      formData.append('job_url', jobUrl);
     } else {
       formData.append('job_description', jobDescription);
     }
@@ -88,7 +94,26 @@ const FileUpload = ({ onAnalysis }) => {
 
   const removeJobDescriptionFile = () => {
     setJobDescriptionFile(null);
+    setJobUrl('');
     setErrors(prev => ({ ...prev, jobDescription: null }));
+    setInputMethod('text');
+  };
+
+  const handleInputMethodChange = (method) => {
+    setInputMethod(method);
+    setErrors(prev => ({ ...prev, jobDescription: null }));
+    
+    // Clear other inputs when switching methods
+    if (method === 'text') {
+      setJobDescriptionFile(null);
+      setJobUrl('');
+    } else if (method === 'file') {
+      setJobDescription('');
+      setJobUrl('');
+    } else if (method === 'url') {
+      setJobDescription('');
+      setJobDescriptionFile(null);
+    }
   };
 
   return (
@@ -150,66 +175,116 @@ const FileUpload = ({ onAnalysis }) => {
             Job Description *
           </label>
           
-          {/* Text Input */}
-          <div className="mb-3">
-            <textarea
-              value={jobDescription}
-              onChange={(e) => {
-                setJobDescription(e.target.value);
-                setJobDescriptionFile(null); // Clear file when typing
-                setErrors(prev => ({ ...prev, jobDescription: null }));
-              }}
-              placeholder="Paste the job description here..."
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
-              rows={6}
-              disabled={!!jobDescriptionFile}
-            />
-          </div>
-
-          {/* OR Divider */}
-          <div className="relative mb-3">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-300" />
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-2 bg-white text-gray-500">OR</span>
-            </div>
-          </div>
-
-          {/* File Upload */}
-          {jobDescriptionFile ? (
-            <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
-              <div className="flex items-center">
-                <FileText className="h-5 w-5 text-green-600 mr-3" />
-                <span className="text-sm font-medium text-green-800">{jobDescriptionFile.name}</span>
-              </div>
-              <button
-                type="button"
-                onClick={removeJobDescriptionFile}
-                className="text-green-600 hover:text-green-800"
-              >
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-          ) : (
-            <div
-              {...getJobRootProps()}
-              className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
-                isJobDragActive
-                  ? 'border-primary-400 bg-primary-50'
-                  : errors.jobDescription
-                  ? 'border-error-300 bg-error-50'
-                  : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
+          {/* Input Method Tabs */}
+          <div className="flex space-x-1 mb-4 bg-gray-100 p-1 rounded-lg">
+            <button
+              type="button"
+              onClick={() => handleInputMethodChange('text')}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                inputMethod === 'text'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              <input {...getJobInputProps()} />
-              <Upload className="h-6 w-6 text-gray-400 mx-auto mb-2" />
-              <p className="text-sm text-gray-600">
-                {isJobDragActive
-                  ? 'Drop job description file here...'
-                  : 'Upload job description file'}
+              Paste Text
+            </button>
+            <button
+              type="button"
+              onClick={() => handleInputMethodChange('file')}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                inputMethod === 'file'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Upload File
+            </button>
+            <button
+              type="button"
+              onClick={() => handleInputMethodChange('url')}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                inputMethod === 'url'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Job URL
+            </button>
+          </div>
+
+          {/* Text Input */}
+          {inputMethod === 'text' && (
+            <div className="mb-3">
+              <textarea
+                value={jobDescription}
+                onChange={(e) => {
+                  setJobDescription(e.target.value);
+                  setErrors(prev => ({ ...prev, jobDescription: null }));
+                }}
+                placeholder="Paste the job description here..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                rows={6}
+              />
+            </div>
+          )}
+
+          {/* File Upload */}
+          {inputMethod === 'file' && (
+            <div className="mb-3">
+              {jobDescriptionFile ? (
+                <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center">
+                    <FileText className="h-5 w-5 text-green-600 mr-3" />
+                    <span className="text-sm font-medium text-green-800">{jobDescriptionFile.name}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={removeJobDescriptionFile}
+                    className="text-green-600 hover:text-green-800"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  {...getJobRootProps()}
+                  className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                    isJobDragActive
+                      ? 'border-primary-400 bg-primary-50'
+                      : errors.jobDescription
+                      ? 'border-error-300 bg-error-50'
+                      : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
+                  }`}
+                >
+                  <input {...getJobInputProps()} />
+                  <Upload className="h-6 w-6 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">
+                    {isJobDragActive
+                      ? 'Drop job description file here...'
+                      : 'Upload job description file'}
+                  </p>
+                  <p className="text-xs text-gray-500">PDF, DOCX, or TXT files</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* URL Input */}
+          {inputMethod === 'url' && (
+            <div className="mb-3">
+              <input
+                type="url"
+                value={jobUrl}
+                onChange={(e) => {
+                  setJobUrl(e.target.value);
+                  setErrors(prev => ({ ...prev, jobDescription: null }));
+                }}
+                placeholder="https://linkedin.com/jobs/view/1234567890 or https://indeed.com/viewjob?jk=abc123..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Supports LinkedIn, Indeed, Glassdoor, ZipRecruiter, and other job sites
               </p>
-              <p className="text-xs text-gray-500">PDF, DOCX, or TXT files</p>
             </div>
           )}
           
@@ -225,7 +300,7 @@ const FileUpload = ({ onAnalysis }) => {
         <button
           type="submit"
           className="w-full btn-primary"
-          disabled={!resumeFile || (!jobDescription.trim() && !jobDescriptionFile)}
+          disabled={!resumeFile || (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim())}
         >
           Analyze Resume
         </button>
