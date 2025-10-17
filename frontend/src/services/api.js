@@ -2,7 +2,7 @@ import axios from 'axios';
 
 const API_BASE_URL = process.env.REACT_APP_API_URL || 
   (process.env.NODE_ENV === 'production' 
-    ? 'https://ats-resume-reviewer-backend.onrender.com'  // Render backend URL
+    ? 'https://rats-h0z1.onrender.com'  // Your actual Render backend URL
     : 'http://localhost:8000');  // Local development
 
 const api = axios.create({
