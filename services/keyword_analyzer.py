@@ -4,16 +4,12 @@ from collections import Counter
 from models.resume_data import ResumeData
 from models.job_data import JobData
 from models.analysis_result import KeywordAnalysis, KeywordMatch
-import spacy
 from difflib import SequenceMatcher
 
 class KeywordAnalyzer:
     def __init__(self):
-        try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except OSError:
-            print("Warning: spaCy model not found. Install with: python -m spacy download en_core_web_sm")
-            self.nlp = None
+        # Simple text processing without spaCy
+        self.nlp = None
         
         # Keyword synonyms mapping
         self.synonyms = {

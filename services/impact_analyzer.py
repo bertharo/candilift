@@ -2,15 +2,11 @@ import re
 from typing import List, Dict, Tuple
 from models.resume_data import ResumeData
 from models.analysis_result import ImpactAnalysis, ImpactBullet
-import spacy
 
 class ImpactAnalyzer:
     def __init__(self):
-        try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except OSError:
-            print("Warning: spaCy model not found. Install with: python -m spacy download en_core_web_sm")
-            self.nlp = None
+        # Simple verb detection without spaCy
+        self.nlp = None
         
         # Strong action verbs that indicate impact
         self.strong_action_verbs = {

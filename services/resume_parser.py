@@ -3,17 +3,12 @@ import os
 from typing import List, Dict, Optional
 from pdfminer.high_level import extract_text
 from docx import Document
-import spacy
 from models.resume_data import ResumeData, ContactInfo, Experience, Education
 
 class ResumeParser:
     def __init__(self):
-        # Load spaCy model for NLP processing
-        try:
-            self.nlp = spacy.load("en_core_web_sm")
-        except OSError:
-            print("Warning: spaCy model not found. Install with: python -m spacy download en_core_web_sm")
-            self.nlp = None
+        # Simple text processing without spaCy
+        self.nlp = None
     
     def parse(self, file_path: str) -> ResumeData:
         """Parse resume from file path."""
