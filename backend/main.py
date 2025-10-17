@@ -1,0 +1,141 @@
+from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import uvicorn
+from typing import Dict, List, Optional
+import os
+import tempfile
+import json
+from datetime import datetime
+
+from services.resume_parser import ResumeParser
+from services.job_parser import JobDescriptionParser
+from services.keyword_analyzer import KeywordAnalyzer
+from services.formatting_checker import FormattingChecker
+from services.impact_analyzer import ImpactAnalyzer
+from services.scoring_engine import ScoringEngine
+from services.recommendation_engine import RecommendationEngine
+from models.analysis_result import AnalysisResult
+
+app = FastAPI(title="ATS Resume Reviewer", version="1.0.0")
+
+# Configure CORS
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["http://localhost:3000"],  # React dev server
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# Initialize services
+resume_parser = ResumeParser()
+job_parser = JobDescriptionParser()
+keyword_analyzer = KeywordAnalyzer()
+formatting_checker = FormattingChecker()
+impact_analyzer = ImpactAnalyzer()
+scoring_engine = ScoringEngine()
+recommendation_engine = RecommendationEngine()
+
+@app.get("/")
+async def root():
+    return {"message": "ATS Resume Reviewer API", "version": "1.0.0"}
+
+@app.post("/analyze")
+async def analyze_resume(
+    resume_file: UploadFile = File(...),
+    job_description: str = "",
+    job_description_file: Optional[UploadFile] = File(None)
+):
+    """
+    Analyze a resume against a job description for ATS compliance and optimization.
+    """
+    try:
+        # Validate file types
+        if not resume_file.filename.lower().endswith(('.pdf', '.docx')):
+            raise HTTPException(status_code=400, detail="Resume must be PDF or DOCX format")
+        
+        # Parse job description
+        if job_description_file:
+            if not job_description_file.filename.lower().endswith(('.pdf', '.docx', '.txt')):
+                raise HTTPException(status_code=400, detail="Job description file must be PDF, DOCX, or TXT format")
+            job_description = await parse_job_description_file(job_description_file)
+        
+        if not job_description.strip():
+            raise HTTPException(status_code=400, detail="Job description is required")
+        
+        # Save resume to temporary file
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{resume_file.filename.split('.')[-1]}") as temp_file:
+            content = await resume_file.read()
+            temp_file.write(content)
+            temp_file_path = temp_file.name
+        
+        try:
+            # Parse resume
+            resume_data = resume_parser.parse(temp_file_path)
+            
+            # Parse job description
+            job_data = job_parser.parse(job_description)
+            
+            # Perform analysis
+            keyword_analysis = keyword_analyzer.analyze(resume_data, job_data)
+            formatting_analysis = formatting_checker.check(resume_data)
+            impact_analysis = impact_analyzer.analyze(resume_data)
+            
+            # Calculate scores
+            ats_score = scoring_engine.calculate_ats_score(keyword_analysis, formatting_analysis)
+            recruiter_score = scoring_engine.calculate_recruiter_score(impact_analysis, formatting_analysis)
+            
+            # Generate recommendations
+            recommendations = recommendation_engine.generate_recommendations(
+                keyword_analysis, formatting_analysis, impact_analysis, ats_score, recruiter_score
+            )
+            
+            # Create analysis result
+            result = AnalysisResult(
+                resume_filename=resume_file.filename,
+                analysis_timestamp=datetime.now(),
+                ats_score=ats_score,
+                recruiter_score=recruiter_score,
+                keyword_analysis=keyword_analysis,
+                formatting_analysis=formatting_analysis,
+                impact_analysis=impact_analysis,
+                recommendations=recommendations
+            )
+            
+            return result.dict()
+            
+        finally:
+            # Clean up temporary file
+            os.unlink(temp_file_path)
+            
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
+
+async def parse_job_description_file(file: UploadFile) -> str:
+    """Parse job description from uploaded file."""
+    content = await file.read()
+    
+    if file.filename.lower().endswith('.txt'):
+        return content.decode('utf-8')
+    elif file.filename.lower().endswith(('.pdf', '.docx')):
+        with tempfile.NamedTemporaryFile(delete=False, suffix=f".{file.filename.split('.')[-1]}") as temp_file:
+            temp_file.write(content)
+            temp_file_path = temp_file.name
+        
+        try:
+            if file.filename.lower().endswith('.pdf'):
+                return resume_parser.parse_pdf(temp_file_path)
+            else:
+                return resume_parser.parse_docx(temp_file_path)
+        finally:
+            os.unlink(temp_file_path)
+    else:
+        raise HTTPException(status_code=400, detail="Unsupported job description file format")
+
+@app.get("/health")
+async def health_check():
+    return {"status": "healthy", "timestamp": datetime.now()}
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)
