@@ -3,16 +3,16 @@ uvicorn[standard]==0.24.0
 python-multipart==0.0.6
 pdfminer.six==20231228
 python-docx==1.1.0
-# Core dependencies only - remove heavy ML libraries
+# Core dependencies only - minimal set for ATS functionality
 pydantic==2.5.0
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
 aiofiles==23.2.1
 jinja2==3.1.2
 requests==2.32.5
 beautifulsoup4==4.12.2
 lxml==6.0.2
-# Removed heavy dependencies that cause compilation issues:
+# Removed dependencies that cause compilation issues:
+# - python-jose[cryptography] (requires Rust compilation)
+# - passlib[bcrypt] (not needed for ATS simulation)
 # - scikit-learn (not compatible with Python 3.13)
 # - pandas (not needed for basic ATS simulation)
 # - numpy (not needed for basic ATS simulation)
