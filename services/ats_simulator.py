@@ -102,9 +102,10 @@ class ATSSimulator:
             "Generating recommendations..."
         ]
         
-        # Simulate realistic processing delays
-        for step in processing_steps:
-            time.sleep(random.uniform(0.1, 0.3))
+        # Simulate realistic processing delays (reduced for better UX)
+        # Temporarily disabled for debugging
+        # for step in processing_steps:
+        #     time.sleep(random.uniform(0.05, 0.1))
         
         # Perform platform-specific analysis
         analysis_result = self._perform_platform_analysis(resume_data, job_data, ats_config)
