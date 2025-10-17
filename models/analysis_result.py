@@ -74,6 +74,11 @@ class AnalysisResult(BaseModel):
     formatting_analysis: FormattingAnalysis
     impact_analysis: ImpactAnalysis
     recommendations: List[Recommendation]
+    # ATS Simulation fields
+    ats_platform: Optional[str] = None
+    processing_time: Optional[float] = None
+    ats_quirks: Optional[List[str]] = None
+    platform_weights: Optional[Dict[str, float]] = None
     
     class Config:
         json_encoders = {

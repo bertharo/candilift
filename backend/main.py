@@ -4,9 +4,13 @@ from fastapi.responses import JSONResponse
 import uvicorn
 from typing import Dict, List, Optional
 import os
+import sys
 import tempfile
 import json
 from datetime import datetime
+
+# Add the parent directory to Python path
+sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from services.resume_parser import ResumeParser
 from services.job_parser import JobDescriptionParser
@@ -16,6 +20,7 @@ from services.impact_analyzer import ImpactAnalyzer
 from services.scoring_engine import ScoringEngine
 from services.recommendation_engine import RecommendationEngine
 from services.url_scraper import JobPostingScraper
+from services.ats_simulator import ATSSimulator
 from models.analysis_result import AnalysisResult
 
 app = FastAPI(title="ATS Resume Reviewer", version="1.0.0")
@@ -38,6 +43,7 @@ impact_analyzer = ImpactAnalyzer()
 scoring_engine = ScoringEngine()
 recommendation_engine = RecommendationEngine()
 url_scraper = JobPostingScraper()
+ats_simulator = ATSSimulator()
 
 @app.get("/")
 async def root():
@@ -48,7 +54,8 @@ async def analyze_resume(
     resume_file: UploadFile = File(...),
     job_description: str = "",
     job_description_file: Optional[UploadFile] = File(None),
-    job_url: Optional[str] = None
+    job_url: Optional[str] = None,
+    ats_platform: Optional[str] = None
 ):
     """
     Analyze a resume against a job description for ATS compliance and optimization.
@@ -89,30 +96,50 @@ async def analyze_resume(
             # Parse job description
             job_data = job_parser.parse(job_description)
             
-            # Perform analysis
+            # Perform ATS simulation analysis
+            ats_analysis = ats_simulator.simulate_ats_analysis(resume_data, job_data, ats_platform)
+            
+            # Perform detailed analysis
             keyword_analysis = keyword_analyzer.analyze(resume_data, job_data)
             formatting_analysis = formatting_checker.check(resume_data)
             impact_analysis = impact_analyzer.analyze(resume_data)
             
-            # Calculate scores
-            ats_score = scoring_engine.calculate_ats_score(keyword_analysis, formatting_analysis)
+            # Calculate additional scores
             recruiter_score = scoring_engine.calculate_recruiter_score(impact_analysis, formatting_analysis)
             
             # Generate recommendations
             recommendations = recommendation_engine.generate_recommendations(
-                keyword_analysis, formatting_analysis, impact_analysis, ats_score, recruiter_score
+                keyword_analysis, formatting_analysis, impact_analysis, 
+                ats_analysis['ats_score'], recruiter_score
             )
             
-            # Create analysis result
+            # Add ATS-specific recommendations
+            if ats_platform:
+                ats_recommendations = ats_simulator.get_ats_platform_recommendations(ats_platform)
+                for rec_text in ats_recommendations:
+                    recommendations.append({
+                        'category': 'ats_platform',
+                        'severity': 'major',
+                        'title': f'{ats_analysis["ats_platform"]} Optimization',
+                        'description': rec_text,
+                        'priority_score': 7.0
+                    })
+            
+            # Create analysis result with ATS simulation data
             result = AnalysisResult(
                 resume_filename=resume_file.filename,
                 analysis_timestamp=datetime.now(),
-                ats_score=ats_score,
+                ats_score=ats_analysis['ats_score'],
                 recruiter_score=recruiter_score,
                 keyword_analysis=keyword_analysis,
                 formatting_analysis=formatting_analysis,
                 impact_analysis=impact_analysis,
-                recommendations=recommendations
+                recommendations=recommendations,
+                # Add ATS simulation data
+                ats_platform=ats_analysis.get('ats_platform', 'Generic ATS'),
+                processing_time=ats_analysis.get('processing_time', 0),
+                ats_quirks=ats_analysis.get('ats_quirks', []),
+                platform_weights=ats_analysis.get('platform_weights', {})
             )
             
             return result.dict()

@@ -8,6 +8,7 @@ const FileUpload = ({ onAnalysis }) => {
   const [jobDescriptionFile, setJobDescriptionFile] = useState(null);
   const [jobUrl, setJobUrl] = useState('');
   const [inputMethod, setInputMethod] = useState('text'); // 'text', 'file', 'url'
+  const [atsPlatform, setAtsPlatform] = useState('auto'); // 'auto', 'workday', 'greenhouse', etc.
   const [errors, setErrors] = useState({});
 
   const onDropResume = useCallback((acceptedFiles, rejectedFiles) => {
@@ -82,6 +83,11 @@ const FileUpload = ({ onAnalysis }) => {
       formData.append('job_url', jobUrl);
     } else {
       formData.append('job_description', jobDescription);
+    }
+    
+    // Add ATS platform selection
+    if (atsPlatform !== 'auto') {
+      formData.append('ats_platform', atsPlatform);
     }
 
     onAnalysis(formData);
@@ -296,13 +302,35 @@ const FileUpload = ({ onAnalysis }) => {
           )}
         </div>
 
+        {/* ATS Platform Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            ATS Platform (Optional)
+          </label>
+          <select
+            value={atsPlatform}
+            onChange={(e) => setAtsPlatform(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
+            <option value="auto">Auto-detect (Recommended)</option>
+            <option value="workday">Workday</option>
+            <option value="greenhouse">Greenhouse</option>
+            <option value="lever">Lever</option>
+            <option value="bamboohr">BambooHR</option>
+            <option value="icims">iCIMS</option>
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            Select a specific ATS platform for more targeted analysis, or let us auto-detect the best approach
+          </p>
+        </div>
+
         {/* Submit Button */}
         <button
           type="submit"
           className="w-full btn-primary"
           disabled={!resumeFile || (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim())}
         >
-          Analyze Resume
+          🚀 Analyze Resume with ATS Simulator
         </button>
       </form>
     </div>

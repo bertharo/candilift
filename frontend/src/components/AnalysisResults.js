@@ -90,9 +90,15 @@ const AnalysisResults = ({ result }) => {
               {getScoreIcon(result.ats_score)}
             </div>
             <div className="text-3xl font-bold mb-2">{result.ats_score.toFixed(0)}/100</div>
-            <p className="text-sm">
+            <p className="text-sm mb-2">
               Measures compatibility with Applicant Tracking Systems
             </p>
+            {result.ats_platform && (
+              <div className="text-xs text-gray-600 bg-gray-100 px-2 py-1 rounded">
+                Simulated on: {result.ats_platform}
+                {result.processing_time && ` • ${result.processing_time.toFixed(1)}s`}
+              </div>
+            )}
           </div>
 
           <div className={`card border-2 ${getScoreColor(result.recruiter_score)}`}>
@@ -106,6 +112,40 @@ const AnalysisResults = ({ result }) => {
             </p>
           </div>
         </div>
+
+        {/* ATS Platform Info */}
+        {result.ats_platform && (
+          <div className="card bg-blue-50 border-blue-200">
+            <div className="flex items-start">
+              <div className="flex-shrink-0">
+                <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
+                  <span className="text-blue-600 text-sm font-bold">ATS</span>
+                </div>
+              </div>
+              <div className="ml-3">
+                <h3 className="text-sm font-medium text-blue-800">
+                  ATS Platform: {result.ats_platform}
+                </h3>
+                <p className="text-sm text-blue-700 mt-1">
+                  Your resume was analyzed using {result.ats_platform} simulation with realistic parsing rules and scoring algorithms.
+                </p>
+                {result.ats_quirks && result.ats_quirks.length > 0 && (
+                  <div className="mt-2">
+                    <p className="text-xs font-medium text-blue-800 mb-1">Platform-specific insights:</p>
+                    <ul className="text-xs text-blue-700 space-y-1">
+                      {result.ats_quirks.map((quirk, index) => (
+                        <li key={index} className="flex items-start">
+                          <span className="text-blue-500 mr-1">•</span>
+                          <span>{quirk}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
       </div>
 
       {/* Tabs */}
