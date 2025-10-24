@@ -58,6 +58,13 @@ const FileUpload = ({ onAnalysis }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     
+    console.log('Submit button clicked!');
+    console.log('resumeFile:', resumeFile);
+    console.log('jobDescription:', jobDescription);
+    console.log('jobDescriptionFile:', jobDescriptionFile);
+    console.log('jobUrl:', jobUrl);
+    console.log('inputMethod:', inputMethod);
+    
     // Validation
     const newErrors = {};
     if (!resumeFile) {
@@ -67,11 +74,15 @@ const FileUpload = ({ onAnalysis }) => {
       newErrors.jobDescription = 'Please provide a job description';
     }
     
+    console.log('Validation errors:', newErrors);
     setErrors(newErrors);
     
     if (Object.keys(newErrors).length > 0) {
+      console.log('Validation failed, not submitting');
       return;
     }
+    
+    console.log('Validation passed, calling onAnalysis');
 
     // Create form data
     const formData = new FormData();
@@ -329,6 +340,7 @@ const FileUpload = ({ onAnalysis }) => {
           type="submit"
           className="w-full btn-primary"
           disabled={!resumeFile || (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim())}
+          onClick={() => console.log('Button clicked!')}
         >
           🚀 Analyze Resume with ATS Simulator
         </button>
