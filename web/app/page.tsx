@@ -11,7 +11,12 @@ export default function Home() {
   const handleAnalysis = async (formData: FormData) => {
     setIsLoading(true)
     try {
-      const response = await fetch('/api/analyze', {
+      // Use your Render backend URL
+      const API_BASE_URL = process.env.NODE_ENV === 'production' 
+        ? 'https://rats-h0z1.onrender.com' 
+        : 'http://localhost:8000'
+      
+      const response = await fetch(`${API_BASE_URL}/analyze`, {
         method: 'POST',
         body: formData,
       })
