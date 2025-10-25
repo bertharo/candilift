@@ -13,6 +13,7 @@ export default function FileUpload({ onAnalysis, isLoading }: FileUploadProps) {
   const [jobDescription, setJobDescription] = useState('')
   const [jobUrl, setJobUrl] = useState('')
   const [atsPlatform, setAtsPlatform] = useState('generic')
+  const [activeTab, setActiveTab] = useState<'description' | 'url'>('description')
 
   const onDrop = useCallback((acceptedFiles: File[]) => {
     const file = acceptedFiles[0]
@@ -60,74 +61,125 @@ export default function FileUpload({ onAnalysis, isLoading }: FileUploadProps) {
   }
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-6">Upload Your Resume & Job Description</h2>
+    <div className="card-elevated p-8 mb-8">
+      <div className="text-center mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 mb-3">Get Started</h2>
+        <p className="text-lg text-gray-600">Upload your resume and job details for AI-powered analysis</p>
+      </div>
       
-      <form onSubmit={handleSubmit} className="space-y-6">
-        {/* Resume Upload */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Resume File (PDF or DOCX)
+      <form onSubmit={handleSubmit} className="space-y-8">
+        {/* Resume Upload Section */}
+        <div className="space-y-4">
+          <label className="block text-sm font-semibold text-gray-900 mb-3">
+            Resume File
           </label>
           <div
             {...getRootProps()}
-            className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
-              isDragActive ? 'border-blue-400 bg-blue-50' : 'border-gray-300 hover:border-gray-400'
+            className={`relative border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-all duration-200 ${
+              isDragActive 
+                ? 'border-indigo-400 bg-indigo-50 scale-[1.02]' 
+                : resumeFile 
+                  ? 'border-green-400 bg-green-50' 
+                  : 'border-gray-300 hover:border-gray-400 hover:bg-gray-50'
             }`}
           >
             <input {...getInputProps()} />
-            {resumeFile ? (
-              <div className="text-green-600">
-                <p className="font-medium">✓ {resumeFile.name}</p>
-                <p className="text-sm text-gray-500">Click to change file</p>
-              </div>
-            ) : (
-              <div>
-                <p className="text-gray-600">
-                  {isDragActive ? 'Drop the file here' : 'Drag & drop your resume here, or click to select'}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">Supports PDF and DOCX files</p>
-              </div>
-            )}
+            <div className="space-y-4">
+              {resumeFile ? (
+                <div className="space-y-2">
+                  <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+                    <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                  <div className="text-green-700 font-medium">{resumeFile.name}</div>
+                  <p className="text-sm text-green-600">Click to change file</p>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center mx-auto">
+                    <svg className="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                    </svg>
+                  </div>
+                  <div>
+                    <p className="text-lg font-medium text-gray-900 mb-2">
+                      {isDragActive ? 'Drop your resume here' : 'Upload your resume'}
+                    </p>
+                    <p className="text-sm text-gray-600">Supports PDF and DOCX files up to 10MB</p>
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* Job Description Input */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Job Description
+        {/* Job Details Section */}
+        <div className="space-y-6">
+          <label className="block text-sm font-semibold text-gray-900 mb-3">
+            Job Details
           </label>
-          <textarea
-            value={jobDescription}
-            onChange={(e) => setJobDescription(e.target.value)}
-            placeholder="Paste the job description here..."
-            className="w-full h-32 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
-        </div>
+          
+          {/* Tab Navigation */}
+          <div className="flex space-x-1 bg-gray-100 p-1 rounded-lg">
+            <button
+              type="button"
+              onClick={() => setActiveTab('description')}
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
+                activeTab === 'description'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Job Description
+            </button>
+            <button
+              type="button"
+              onClick={() => setActiveTab('url')}
+              className={`flex-1 py-2 px-4 text-sm font-medium rounded-md transition-all duration-200 ${
+                activeTab === 'url'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Job URL
+            </button>
+          </div>
 
-        {/* Job URL Input */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            Or Job Posting URL
-          </label>
-          <input
-            type="url"
-            value={jobUrl}
-            onChange={(e) => setJobUrl(e.target.value)}
-            placeholder="https://example.com/job-posting"
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-          />
+          {/* Tab Content */}
+          {activeTab === 'description' ? (
+            <div className="space-y-4">
+              <textarea
+                value={jobDescription}
+                onChange={(e) => setJobDescription(e.target.value)}
+                placeholder="Paste the job description here..."
+                className="w-full h-40 px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+              />
+              <p className="text-sm text-gray-500">Copy and paste the complete job description for best results</p>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <input
+                type="url"
+                value={jobUrl}
+                onChange={(e) => setJobUrl(e.target.value)}
+                placeholder="https://example.com/job-posting"
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              />
+              <p className="text-sm text-gray-500">We'll automatically extract the job details from the URL</p>
+            </div>
+          )}
         </div>
 
         {/* ATS Platform Selection */}
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">
-            ATS Platform
+        <div className="space-y-4">
+          <label className="block text-sm font-semibold text-gray-900">
+            Target ATS Platform
           </label>
           <select
             value={atsPlatform}
             onChange={(e) => setAtsPlatform(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent bg-white"
           >
             <option value="generic">Generic ATS</option>
             <option value="workday">Workday</option>
@@ -136,16 +188,34 @@ export default function FileUpload({ onAnalysis, isLoading }: FileUploadProps) {
             <option value="bamboohr">BambooHR</option>
             <option value="icims">iCIMS</option>
           </select>
+          <p className="text-sm text-gray-500">Select the ATS platform you're targeting for optimized recommendations</p>
         </div>
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isLoading || !resumeFile || (!jobDescription && !jobUrl)}
-          className="w-full bg-blue-600 text-white py-3 px-4 rounded-md font-medium hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-        >
-          {isLoading ? 'Analyzing...' : 'Analyze Resume'}
-        </button>
+        <div className="pt-4">
+          <button
+            type="submit"
+            disabled={isLoading || !resumeFile || (!jobDescription && !jobUrl)}
+            className="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center space-x-2"
+          >
+            {isLoading ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Analyzing...</span>
+              </>
+            ) : (
+              <>
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
+                </svg>
+                <span>Analyze Resume</span>
+              </>
+            )}
+          </button>
+        </div>
       </form>
     </div>
   )
