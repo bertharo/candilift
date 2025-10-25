@@ -137,7 +137,10 @@ const FileUpload = ({ onAnalysis }) => {
     <div className="card">
       <h2 className="text-xl font-semibold mb-6">Upload Your Resume & Job Description</h2>
       
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={(e) => {
+        console.log('Form submitted!');
+        handleSubmit(e);
+      }} className="space-y-6">
         {/* Resume Upload */}
         <div>
           <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -340,7 +343,14 @@ const FileUpload = ({ onAnalysis }) => {
           type="submit"
           className="w-full btn-primary"
           disabled={!resumeFile || (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim())}
-          onClick={() => console.log('Button clicked!')}
+          onClick={(e) => {
+            console.log('Button clicked!');
+            console.log('Button disabled?', !resumeFile || (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim()));
+            console.log('resumeFile exists?', !!resumeFile);
+            console.log('jobDescription exists?', !!jobDescription.trim());
+            console.log('jobDescriptionFile exists?', !!jobDescriptionFile);
+            console.log('jobUrl exists?', !!jobUrl.trim());
+          }}
         >
           🚀 Analyze Resume with ATS Simulator
         </button>
