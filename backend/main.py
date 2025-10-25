@@ -105,6 +105,14 @@ async def analyze_resume(
     Analyze a resume against a job description for ATS compliance and optimization.
     """
     try:
+        # Debug: Log what we received
+        print(f"DEBUG - Received parameters:")
+        print(f"  resume_file: {resume_file.filename if resume_file else 'None'}")
+        print(f"  job_description: '{job_description}'")
+        print(f"  job_description_file: {job_description_file.filename if job_description_file else 'None'}")
+        print(f"  job_url: '{job_url}'")
+        print(f"  ats_platform: '{ats_platform}'")
+        
         # Validate file types
         if not resume_file.filename or not resume_file.filename.lower().endswith(('.pdf', '.docx')):
             raise HTTPException(status_code=400, detail="Resume must be PDF or DOCX format")
