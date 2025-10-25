@@ -345,6 +345,7 @@ const FileUpload = ({ onAnalysis }) => {
           disabled={!resumeFile || (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim())}
           onClick={(e) => {
             console.log('Button clicked!');
+            alert('Button clicked! Check console for details.');
             console.log('Button disabled?', !resumeFile || (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim()));
             console.log('resumeFile exists?', !!resumeFile);
             console.log('jobDescription exists?', !!jobDescription.trim());
