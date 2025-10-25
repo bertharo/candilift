@@ -1,4 +1,4 @@
-from fastapi import FastAPI, File, UploadFile, HTTPException
+from fastapi import FastAPI, File, UploadFile, HTTPException, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import uvicorn
@@ -96,10 +96,10 @@ async def test_ats():
 @app.post("/analyze")
 async def analyze_resume(
     resume_file: UploadFile = File(...),
-    job_description: str = "",
+    job_description: str = Form(""),
     job_description_file: Optional[UploadFile] = File(None),
-    job_url: Optional[str] = None,
-    ats_platform: Optional[str] = None
+    job_url: Optional[str] = Form(None),
+    ats_platform: Optional[str] = Form(None)
 ):
     """
     Analyze a resume against a job description for ATS compliance and optimization.
