@@ -113,9 +113,16 @@ const FileUpload = ({ onAnalysis }) => {
     } else if (jobUrl.trim()) {
       formData.append('job_url', jobUrl);
       console.log('Added job_url to form data:', jobUrl);
-    } else {
-      formData.append('job_description', jobDescription);
-      console.log('Added job_description to form data:', jobDescription);
+    } else if (jobDescription.trim()) {
+      // Check if jobDescription looks like a URL
+      const urlPattern = /^https?:\/\/.+/;
+      if (urlPattern.test(jobDescription.trim())) {
+        formData.append('job_url', jobDescription.trim());
+        console.log('Detected URL in text field, added as job_url:', jobDescription.trim());
+      } else {
+        formData.append('job_description', jobDescription);
+        console.log('Added job_description to form data:', jobDescription);
+      }
     }
     
     // Add ATS platform selection
