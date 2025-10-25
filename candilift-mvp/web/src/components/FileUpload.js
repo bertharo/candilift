@@ -1,0 +1,388 @@
+import React, { useState, useCallback } from 'react';
+import { useDropzone } from 'react-dropzone';
+import { Upload, FileText, X, AlertCircle } from 'lucide-react';
+
+const FileUpload = ({ onAnalysis }) => {
+  const [resumeFile, setResumeFile] = useState(null);
+  const [jobDescription, setJobDescription] = useState('');
+  const [jobDescriptionFile, setJobDescriptionFile] = useState(null);
+  const [jobUrl, setJobUrl] = useState('');
+  const [inputMethod, setInputMethod] = useState('text'); // 'text', 'file', 'url'
+  const [atsPlatform, setAtsPlatform] = useState('auto'); // 'auto', 'workday', 'greenhouse', etc.
+  const [errors, setErrors] = useState({});
+
+  const onDropResume = useCallback((acceptedFiles, rejectedFiles) => {
+    setErrors(prev => ({ ...prev, resume: null }));
+    
+    if (rejectedFiles.length > 0) {
+      setErrors(prev => ({ ...prev, resume: 'Please upload a PDF or DOCX file' }));
+      return;
+    }
+    
+    setResumeFile(acceptedFiles[0]);
+  }, []);
+
+  const onDropJobDescription = useCallback((acceptedFiles, rejectedFiles) => {
+    setErrors(prev => ({ ...prev, jobDescription: null }));
+    
+    if (rejectedFiles.length > 0) {
+      setErrors(prev => ({ ...prev, jobDescription: 'Please upload a PDF, DOCX, or TXT file' }));
+      return;
+    }
+    
+    setJobDescriptionFile(acceptedFiles[0]);
+    setInputMethod('file');
+    // Don't clear other inputs - let user keep their data
+  }, []);
+
+  const { getRootProps: getResumeRootProps, getInputProps: getResumeInputProps, isDragActive: isResumeDragActive } = useDropzone({
+    onDrop: onDropResume,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx']
+    },
+    maxFiles: 1
+  });
+
+  const { getRootProps: getJobRootProps, getInputProps: getJobInputProps, isDragActive: isJobDragActive } = useDropzone({
+    onDrop: onDropJobDescription,
+    accept: {
+      'application/pdf': ['.pdf'],
+      'application/vnd.openxmlformats-officedocument.wordprocessingml.document': ['.docx'],
+      'text/plain': ['.txt']
+    },
+    maxFiles: 1
+  });
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    
+    console.log('Submit button clicked!');
+    console.log('resumeFile:', resumeFile);
+    console.log('jobDescription:', jobDescription);
+    console.log('jobDescriptionFile:', jobDescriptionFile);
+    console.log('jobUrl:', jobUrl);
+    console.log('inputMethod:', inputMethod);
+    
+    // Validation
+    const newErrors = {};
+    if (!resumeFile) {
+      newErrors.resume = 'Please upload your resume';
+    }
+    
+    // Check job description based on current input method
+    let hasJobDescription = false;
+    if (inputMethod === 'text' && jobDescription.trim()) {
+      hasJobDescription = true;
+    } else if (inputMethod === 'file' && jobDescriptionFile) {
+      hasJobDescription = true;
+    } else if (inputMethod === 'url' && jobUrl.trim()) {
+      hasJobDescription = true;
+    } else {
+      // Fallback: check if any method has data
+      hasJobDescription = jobDescription.trim() || jobDescriptionFile || jobUrl.trim();
+    }
+    
+    if (!hasJobDescription) {
+      newErrors.jobDescription = 'Please provide a job description';
+    }
+    
+    console.log('Validation errors:', newErrors);
+    setErrors(newErrors);
+    
+    if (Object.keys(newErrors).length > 0) {
+      console.log('Validation failed, not submitting');
+      return;
+    }
+    
+    console.log('Validation passed, calling onAnalysis');
+
+    // Create form data
+    const formData = new FormData();
+    formData.append('resume_file', resumeFile);
+    
+    console.log('Creating form data:');
+    console.log('- resumeFile:', resumeFile);
+    console.log('- jobDescriptionFile:', jobDescriptionFile);
+    console.log('- jobUrl:', jobUrl);
+    console.log('- jobDescription:', jobDescription);
+    
+    if (jobDescriptionFile) {
+      formData.append('job_description_file', jobDescriptionFile);
+      console.log('Added job_description_file to form data');
+    } else if (jobUrl.trim()) {
+      formData.append('job_url', jobUrl);
+      console.log('Added job_url to form data:', jobUrl);
+    } else if (jobDescription.trim()) {
+      // Check if jobDescription looks like a URL
+      const urlPattern = /^https?:\/\/.+/;
+      if (urlPattern.test(jobDescription.trim())) {
+        formData.append('job_url', jobDescription.trim());
+        console.log('Detected URL in text field, added as job_url:', jobDescription.trim());
+      } else {
+        formData.append('job_description', jobDescription);
+        console.log('Added job_description to form data:', jobDescription);
+      }
+    }
+    
+    // Add ATS platform selection
+    if (atsPlatform !== 'auto') {
+      formData.append('ats_platform', atsPlatform);
+      console.log('Added ats_platform to form data:', atsPlatform);
+    }
+
+    // Debug: Log all form data entries
+    console.log('FormData entries:');
+    for (let [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, value);
+    }
+
+    onAnalysis(formData);
+  };
+
+  const removeResumeFile = () => {
+    setResumeFile(null);
+    setErrors(prev => ({ ...prev, resume: null }));
+  };
+
+  const removeJobDescriptionFile = () => {
+    setJobDescriptionFile(null);
+    setJobUrl('');
+    setErrors(prev => ({ ...prev, jobDescription: null }));
+    setInputMethod('text');
+  };
+
+  const handleInputMethodChange = (method) => {
+    setInputMethod(method);
+    setErrors(prev => ({ ...prev, jobDescription: null }));
+    // Don't clear other inputs - preserve user data across method switches
+  };
+
+  return (
+    <div className="card">
+      <h2 className="text-xl font-semibold mb-6">Upload Your Resume & Job Description</h2>
+      
+      <form onSubmit={(e) => {
+        console.log('Form submitted!');
+        handleSubmit(e);
+      }} className="space-y-6">
+        {/* Resume Upload */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Resume File *
+          </label>
+          {resumeFile ? (
+            <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+              <div className="flex items-center">
+                <FileText className="h-5 w-5 text-green-600 mr-3" />
+                <span className="text-sm font-medium text-green-800">{resumeFile.name}</span>
+              </div>
+              <button
+                type="button"
+                onClick={removeResumeFile}
+                className="text-green-600 hover:text-green-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ) : (
+            <div
+              {...getResumeRootProps()}
+              className={`border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition-colors ${
+                isResumeDragActive
+                  ? 'border-primary-400 bg-primary-50'
+                  : errors.resume
+                  ? 'border-error-300 bg-error-50'
+                  : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
+              }`}
+            >
+              <input {...getResumeInputProps()} />
+              <Upload className="h-8 w-8 text-gray-400 mx-auto mb-2" />
+              <p className="text-sm text-gray-600">
+                {isResumeDragActive
+                  ? 'Drop your resume here...'
+                  : 'Drag & drop your resume here, or click to select'}
+              </p>
+              <p className="text-xs text-gray-500 mt-1">PDF or DOCX files only</p>
+            </div>
+          )}
+          {errors.resume && (
+            <p className="mt-2 text-sm text-error-600 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" />
+              {errors.resume}
+            </p>
+          )}
+        </div>
+
+        {/* Job Description */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            Job Description *
+          </label>
+          
+          {/* Input Method Tabs */}
+          <div className="flex space-x-1 mb-4 bg-gray-100 p-1 rounded-lg">
+            <button
+              type="button"
+              onClick={() => handleInputMethodChange('text')}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                inputMethod === 'text'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Paste Text {jobDescription.trim() && '✓'}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleInputMethodChange('file')}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                inputMethod === 'file'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Upload File {jobDescriptionFile && '✓'}
+            </button>
+            <button
+              type="button"
+              onClick={() => handleInputMethodChange('url')}
+              className={`flex-1 py-2 px-3 text-sm font-medium rounded-md transition-colors ${
+                inputMethod === 'url'
+                  ? 'bg-white text-primary-600 shadow-sm'
+                  : 'text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              Job URL {jobUrl.trim() && '✓'}
+            </button>
+          </div>
+
+          {/* Text Input */}
+          {inputMethod === 'text' && (
+            <div className="mb-3">
+              <textarea
+                value={jobDescription}
+                onChange={(e) => {
+                  setJobDescription(e.target.value);
+                  setErrors(prev => ({ ...prev, jobDescription: null }));
+                }}
+                placeholder="Paste the job description here..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+                rows={6}
+              />
+            </div>
+          )}
+
+          {/* File Upload */}
+          {inputMethod === 'file' && (
+            <div className="mb-3">
+              {jobDescriptionFile ? (
+                <div className="flex items-center justify-between p-4 bg-green-50 border border-green-200 rounded-lg">
+                  <div className="flex items-center">
+                    <FileText className="h-5 w-5 text-green-600 mr-3" />
+                    <span className="text-sm font-medium text-green-800">{jobDescriptionFile.name}</span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={removeJobDescriptionFile}
+                    className="text-green-600 hover:text-green-800"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              ) : (
+                <div
+                  {...getJobRootProps()}
+                  className={`border-2 border-dashed rounded-lg p-4 text-center cursor-pointer transition-colors ${
+                    isJobDragActive
+                      ? 'border-primary-400 bg-primary-50'
+                      : errors.jobDescription
+                      ? 'border-error-300 bg-error-50'
+                      : 'border-gray-300 hover:border-primary-400 hover:bg-gray-50'
+                  }`}
+                >
+                  <input {...getJobInputProps()} />
+                  <Upload className="h-6 w-6 text-gray-400 mx-auto mb-2" />
+                  <p className="text-sm text-gray-600">
+                    {isJobDragActive
+                      ? 'Drop job description file here...'
+                      : 'Upload job description file'}
+                  </p>
+                  <p className="text-xs text-gray-500">PDF, DOCX, or TXT files</p>
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* URL Input */}
+          {inputMethod === 'url' && (
+            <div className="mb-3">
+              <input
+                type="url"
+                value={jobUrl}
+                onChange={(e) => {
+                  setJobUrl(e.target.value);
+                  setErrors(prev => ({ ...prev, jobDescription: null }));
+                }}
+                placeholder="https://linkedin.com/jobs/view/1234567890 or https://indeed.com/viewjob?jk=abc123..."
+                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+              />
+              <p className="mt-1 text-xs text-gray-500">
+                Supports LinkedIn, Indeed, Glassdoor, ZipRecruiter, and other job sites
+              </p>
+            </div>
+          )}
+          
+          {errors.jobDescription && (
+            <p className="mt-2 text-sm text-error-600 flex items-center">
+              <AlertCircle className="h-4 w-4 mr-1" />
+              {errors.jobDescription}
+            </p>
+          )}
+        </div>
+
+        {/* ATS Platform Selection */}
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-2">
+            ATS Platform (Optional)
+          </label>
+          <select
+            value={atsPlatform}
+            onChange={(e) => setAtsPlatform(e.target.value)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
+          >
+            <option value="auto">Auto-detect (Recommended)</option>
+            <option value="workday">Workday</option>
+            <option value="greenhouse">Greenhouse</option>
+            <option value="lever">Lever</option>
+            <option value="bamboohr">BambooHR</option>
+            <option value="icims">iCIMS</option>
+          </select>
+          <p className="mt-1 text-xs text-gray-500">
+            Select a specific ATS platform for more targeted analysis, or let us auto-detect the best approach
+          </p>
+        </div>
+
+        {/* Submit Button */}
+        <button
+          type="submit"
+          className="w-full btn-primary"
+          disabled={!resumeFile || !(jobDescription.trim() || jobDescriptionFile || jobUrl.trim())}
+          onClick={(e) => {
+            console.log('Button clicked!');
+            console.log('resumeFile:', resumeFile);
+            console.log('jobDescription:', jobDescription);
+            console.log('jobDescriptionFile:', jobDescriptionFile);
+            console.log('jobUrl:', jobUrl);
+            console.log('inputMethod:', inputMethod);
+            console.log('Button disabled?', !resumeFile || (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim()));
+          }}
+        >
+          🚀 Analyze Resume with ATS Simulator
+        </button>
+      </form>
+    </div>
+  );
+};
+
+export default FileUpload;
