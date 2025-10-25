@@ -340,17 +340,17 @@ const FileUpload = ({ onAnalysis }) => {
 
         {/* Submit Button */}
         <button
-          type="button"
+          type="submit"
           className="w-full btn-primary"
+          disabled={!resumeFile || (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim())}
           onClick={(e) => {
-            e.preventDefault();
             console.log('Button clicked!');
-            alert('Button clicked! Check console for details.');
             console.log('resumeFile:', resumeFile);
             console.log('jobDescription:', jobDescription);
             console.log('jobDescriptionFile:', jobDescriptionFile);
             console.log('jobUrl:', jobUrl);
             console.log('inputMethod:', inputMethod);
+            console.log('Button disabled?', !resumeFile || (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim()));
           }}
         >
           🚀 Analyze Resume with ATS Simulator
