@@ -101,17 +101,33 @@ const FileUpload = ({ onAnalysis }) => {
     const formData = new FormData();
     formData.append('resume_file', resumeFile);
     
+    console.log('Creating form data:');
+    console.log('- resumeFile:', resumeFile);
+    console.log('- jobDescriptionFile:', jobDescriptionFile);
+    console.log('- jobUrl:', jobUrl);
+    console.log('- jobDescription:', jobDescription);
+    
     if (jobDescriptionFile) {
       formData.append('job_description_file', jobDescriptionFile);
+      console.log('Added job_description_file to form data');
     } else if (jobUrl.trim()) {
       formData.append('job_url', jobUrl);
+      console.log('Added job_url to form data:', jobUrl);
     } else {
       formData.append('job_description', jobDescription);
+      console.log('Added job_description to form data:', jobDescription);
     }
     
     // Add ATS platform selection
     if (atsPlatform !== 'auto') {
       formData.append('ats_platform', atsPlatform);
+      console.log('Added ats_platform to form data:', atsPlatform);
+    }
+
+    // Debug: Log all form data entries
+    console.log('FormData entries:');
+    for (let [key, value] of formData.entries()) {
+      console.log(`  ${key}:`, value);
     }
 
     onAnalysis(formData);
