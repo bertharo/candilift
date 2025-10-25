@@ -31,9 +31,8 @@ const FileUpload = ({ onAnalysis }) => {
     }
     
     setJobDescriptionFile(acceptedFiles[0]);
-    setJobDescription(''); // Clear text input when file is uploaded
-    setJobUrl(''); // Clear URL input when file is uploaded
     setInputMethod('file');
+    // Don't clear other inputs - let user keep their data
   }, []);
 
   const { getRootProps: getResumeRootProps, getInputProps: getResumeInputProps, isDragActive: isResumeDragActive } = useDropzone({
@@ -70,7 +69,21 @@ const FileUpload = ({ onAnalysis }) => {
     if (!resumeFile) {
       newErrors.resume = 'Please upload your resume';
     }
-    if (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim()) {
+    
+    // Check job description based on current input method
+    let hasJobDescription = false;
+    if (inputMethod === 'text' && jobDescription.trim()) {
+      hasJobDescription = true;
+    } else if (inputMethod === 'file' && jobDescriptionFile) {
+      hasJobDescription = true;
+    } else if (inputMethod === 'url' && jobUrl.trim()) {
+      hasJobDescription = true;
+    } else {
+      // Fallback: check if any method has data
+      hasJobDescription = jobDescription.trim() || jobDescriptionFile || jobUrl.trim();
+    }
+    
+    if (!hasJobDescription) {
       newErrors.jobDescription = 'Please provide a job description';
     }
     
@@ -119,18 +132,7 @@ const FileUpload = ({ onAnalysis }) => {
   const handleInputMethodChange = (method) => {
     setInputMethod(method);
     setErrors(prev => ({ ...prev, jobDescription: null }));
-    
-    // Clear other inputs when switching methods
-    if (method === 'text') {
-      setJobDescriptionFile(null);
-      setJobUrl('');
-    } else if (method === 'file') {
-      setJobDescription('');
-      setJobUrl('');
-    } else if (method === 'url') {
-      setJobDescription('');
-      setJobDescriptionFile(null);
-    }
+    // Don't clear other inputs - preserve user data across method switches
   };
 
   return (
@@ -206,7 +208,7 @@ const FileUpload = ({ onAnalysis }) => {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Paste Text
+              Paste Text {jobDescription.trim() && '✓'}
             </button>
             <button
               type="button"
@@ -217,7 +219,7 @@ const FileUpload = ({ onAnalysis }) => {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Upload File
+              Upload File {jobDescriptionFile && '✓'}
             </button>
             <button
               type="button"
@@ -228,7 +230,7 @@ const FileUpload = ({ onAnalysis }) => {
                   : 'text-gray-600 hover:text-gray-900'
               }`}
             >
-              Job URL
+              Job URL {jobUrl.trim() && '✓'}
             </button>
           </div>
 
@@ -342,7 +344,7 @@ const FileUpload = ({ onAnalysis }) => {
         <button
           type="submit"
           className="w-full btn-primary"
-          disabled={!resumeFile || (!jobDescription.trim() && !jobDescriptionFile && !jobUrl.trim())}
+          disabled={!resumeFile || !(jobDescription.trim() || jobDescriptionFile || jobUrl.trim())}
           onClick={(e) => {
             console.log('Button clicked!');
             console.log('resumeFile:', resumeFile);
