@@ -8,6 +8,10 @@ from fastapi.responses import JSONResponse
 import uvicorn
 import os
 from contextlib import asynccontextmanager
+from analysis_engine import AnalysisEngine
+
+# Initialize analysis engine
+analysis_engine = AnalysisEngine()
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -70,45 +74,28 @@ async def analyze_resume(
         if not job_description and not job_url:
             raise HTTPException(status_code=400, detail="Job description or URL is required")
         
-        # Mock response for now
-        result = {
-            "ats_score": 78,
-            "recruiter_score": 85,
-            "score_drivers": [
-                {
-                    "component": "Keyword Matching",
-                    "score": 82,
-                    "explanation": "Good keyword alignment with job requirements"
-                },
-                {
-                    "component": "Format Compliance", 
-                    "score": 75,
-                    "explanation": "Resume format is mostly ATS-friendly"
-                },
-                {
-                    "component": "Experience Relevance",
-                    "score": 88,
-                    "explanation": "Strong relevant experience demonstrated"
-                }
-            ],
-            "recommendations": [
-                {
-                    "category": "Skills Enhancement",
-                    "description": "Add more specific technical skills mentioned in the job description",
-                    "estimated_lift": 12,
-                    "example": "Instead of 'experienced with databases', use '5+ years PostgreSQL, MongoDB'"
-                },
-                {
-                    "category": "Quantify Achievements",
-                    "description": "Add more metrics and numbers to your accomplishments",
-                    "estimated_lift": 8,
-                    "example": "Increased team productivity by 25% through process optimization"
-                }
-            ],
-            "gap_analysis": {
-                "missing_skills": ["Python", "Machine Learning", "AWS"],
-                "present_skills": ["JavaScript", "React", "Node.js", "SQL"]
-            }
+        # Read file content
+        file_content = await resume_file.read()
+        
+        # Perform real analysis
+        print(f"Analyzing resume: {resume_file.filename}")
+        print(f"Job description provided: {bool(job_description)}")
+        print(f"Job URL provided: {bool(job_url)}")
+        
+        result = analysis_engine.analyze(
+            resume_file_content=file_content,
+            resume_filename=resume_file.filename,
+            job_description=job_description,
+            job_url=job_url
+        )
+        
+        # Add debug info to response
+        result['debug_info'] = {
+            'filename': resume_file.filename,
+            'file_size': len(file_content),
+            'job_description_length': len(job_description),
+            'job_url': job_url,
+            'ats_platform': ats_platform
         }
         
         return result
