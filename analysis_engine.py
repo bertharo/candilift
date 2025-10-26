@@ -747,8 +747,8 @@ class AnalysisEngine:
         """Infer job title from skills"""
         skill_categories = {
             'frontend': ['html', 'css', 'react', 'vue', 'angular', 'javascript'],
-            'backend': ['python', 'java', 'node.js', 'express', 'django', 'flask'],
-            'fullstack': ['python', 'javascript', 'react', 'node.js', 'express'],
+            'backend': ['python', 'java', 'node.js', 'django', 'flask'],
+            'fullstack': ['python', 'javascript', 'react', 'node.js'],
             'data': ['python', 'sql', 'pandas', 'numpy', 'machine learning', 'ai'],
             'devops': ['aws', 'docker', 'kubernetes', 'terraform', 'jenkins'],
             'mobile': ['ios', 'android', 'react native', 'flutter', 'swift', 'kotlin'],
