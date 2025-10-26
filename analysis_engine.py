@@ -812,7 +812,7 @@ class AnalysisEngine:
         
         elif role_type == 'senior_level':
             # For senior level, show advanced skills from the job + leadership skills
-            advanced_skills = [skill for skill in job_skills if skill.lower() in ['go', 'rust', 'kubernetes', 'terraform', 'aws', 'docker', 'architecture']]
+            advanced_skills = [skill for skill in job_skills if skill.lower() in ['rust', 'kubernetes', 'terraform', 'aws', 'docker', 'architecture']]
             leadership_skills = ['leadership', 'mentoring']
             combined = advanced_skills + leadership_skills
             return combined[:3]
