@@ -1,1 +1,1 @@
-web: python start_server.py
+web: python3.11 start_server.py
