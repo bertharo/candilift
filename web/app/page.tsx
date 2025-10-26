@@ -13,6 +13,7 @@ export default function Home() {
     try {
       // Try multiple backend URLs in case one is down
       const API_URLS = [
+        process.env.NEXT_PUBLIC_API_URL || 'https://rats-h0z1.onrender.com',
         'https://rats-h0z1.onrender.com',
         'https://candilift-api.onrender.com',
         'http://localhost:8000'
