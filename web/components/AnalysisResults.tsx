@@ -238,7 +238,9 @@ export default function AnalysisResults({ result, onDownloadReport, onGenerateRe
       {result.job_recommendations && result.job_recommendations.length > 0 && (
         <div className="card p-6">
           <h3 className="text-xl font-semibold text-gray-900 mb-6">Recommended Job Roles</h3>
-          <p className="text-gray-600 mb-6">Based on your skills and experience, here are roles that might be a better fit:</p>
+          <p className="text-gray-600 mb-6">
+            Based on your skills and the job you applied for, here are similar roles that might be a better fit:
+          </p>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {result.job_recommendations.map((job: any, index: number) => (

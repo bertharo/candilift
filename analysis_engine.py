@@ -645,12 +645,103 @@ class AnalysisEngine:
         return explanation, improvements
     
     def _generate_job_recommendations(self, resume_data: Dict, job_data: Dict) -> List[Dict[str, Any]]:
-        """Generate job recommendations based on resume analysis"""
+        """Generate job recommendations based on the actual job provided and similar roles"""
         
         resume_skills = set(resume_data['skills'])
         resume_years = resume_data['experience']['years_experience']
         
-        # Define job categories and their requirements
+        # Extract skills from the actual job provided
+        actual_job_skills = set()
+        for category_skills in job_data['required_skills'].values():
+            actual_job_skills.update(category_skills)
+        
+        # If we have a real job with skills, find similar roles
+        if actual_job_skills:
+            recommendations = self._find_similar_jobs(resume_skills, actual_job_skills, resume_years)
+        else:
+            # Fallback to generic recommendations if no job skills extracted
+            recommendations = self._get_generic_recommendations(resume_skills, resume_years)
+        
+        return recommendations
+    
+    def _find_similar_jobs(self, resume_skills: set, job_skills: set, resume_years: int) -> List[Dict[str, Any]]:
+        """Find jobs similar to the one provided"""
+        
+        # Define job categories that might be similar to the provided job
+        similar_job_categories = {
+            'similar_role': {
+                'title': 'Similar Role',
+                'required_skills': list(job_skills)[:5],  # Use actual job skills
+                'preferred_skills': list(job_skills)[5:8] if len(job_skills) > 5 else [],
+                'experience_range': (1, 5),  # Generic range
+                'match_score': 0,
+                'description': 'Role similar to the one you applied for'
+            },
+            'entry_level': {
+                'title': 'Entry-Level Position',
+                'required_skills': list(job_skills)[:3],  # Fewer requirements
+                'preferred_skills': [],
+                'experience_range': (0, 2),
+                'match_score': 0,
+                'description': 'Entry-level version of the role you applied for'
+            },
+            'senior_level': {
+                'title': 'Senior Position',
+                'required_skills': list(job_skills) + ['leadership', 'mentoring'],  # More requirements
+                'preferred_skills': ['architecture', 'strategy'],
+                'experience_range': (5, 10),
+                'match_score': 0,
+                'description': 'Senior version requiring more experience'
+            }
+        }
+        
+        # Calculate match scores
+        for category, job_info in similar_job_categories.items():
+            required_skills = set([skill.lower() for skill in job_info['required_skills']])
+            preferred_skills = set([skill.lower() for skill in job_info['preferred_skills']])
+            resume_skills_lower = set([skill.lower() for skill in resume_skills])
+            
+            # Calculate skill overlap
+            required_match = len(resume_skills_lower.intersection(required_skills))
+            preferred_match = len(resume_skills_lower.intersection(preferred_skills))
+            
+            # Calculate experience fit
+            exp_min, exp_max = job_info['experience_range']
+            if exp_min <= resume_years <= exp_max:
+                exp_score = 1.0
+            elif resume_years < exp_min:
+                exp_score = 0.6  # Underqualified but might work
+            else:
+                exp_score = 0.8  # Overqualified but still relevant
+            
+            # Calculate overall match score
+            if len(required_skills) > 0:
+                skill_score = (required_match * 2 + preferred_match) / (len(required_skills) * 2 + len(preferred_skills))
+            else:
+                skill_score = 0
+            job_info['match_score'] = (skill_score * 0.7 + exp_score * 0.3) * 100
+        
+        # Sort and return top recommendations
+        sorted_jobs = sorted(similar_job_categories.values(), key=lambda x: x['match_score'], reverse=True)
+        
+        recommendations = []
+        for job in sorted_jobs[:3]:  # Top 3 similar recommendations
+            if job['match_score'] > 15:  # Lower threshold for similar jobs
+                recommendations.append({
+                    'title': job['title'],
+                    'match_score': int(job['match_score']),
+                    'description': job['description'],
+                    'experience_level': f"{job['experience_range'][0]}-{job['experience_range'][1]} years",
+                    'required_skills': job['required_skills'][:3],
+                    'match_reason': self._get_match_reason(job['match_score'], resume_skills, job['required_skills'])
+                })
+        
+        return recommendations
+    
+    def _get_generic_recommendations(self, resume_skills: set, resume_years: int) -> List[Dict[str, Any]]:
+        """Fallback to generic job recommendations when no specific job is provided"""
+        
+        # Define generic job categories
         job_categories = {
             'software_engineer': {
                 'title': 'Software Engineer',
@@ -691,30 +782,6 @@ class AnalysisEngine:
                 'experience_range': (2, 6),
                 'match_score': 0,
                 'description': 'Manage infrastructure and deployment pipelines'
-            },
-            'product_manager': {
-                'title': 'Product Manager',
-                'required_skills': ['project management', 'analytics', 'communication'],
-                'preferred_skills': ['agile', 'scrum', 'user research', 'business analysis'],
-                'experience_range': (3, 8),
-                'match_score': 0,
-                'description': 'Lead product strategy and development'
-            },
-            'qa_engineer': {
-                'title': 'QA Engineer',
-                'required_skills': ['testing', 'automation', 'selenium', 'python'],
-                'preferred_skills': ['junit', 'testng', 'api testing', 'performance testing'],
-                'experience_range': (1, 5),
-                'match_score': 0,
-                'description': 'Ensure software quality through testing'
-            },
-            'mobile_developer': {
-                'title': 'Mobile Developer',
-                'required_skills': ['ios', 'android', 'swift', 'kotlin'],
-                'preferred_skills': ['react native', 'flutter', 'xamarin', 'javascript'],
-                'experience_range': (1, 4),
-                'match_score': 0,
-                'description': 'Develop mobile applications for iOS and Android'
             }
         }
         
