@@ -110,6 +110,9 @@ class ReportGenerator:
             story.append(Spacer(1, 15))
             story.append(Paragraph("Likelihood Assessment", self.styles['SectionHeader']))
             story.append(Paragraph(analysis_result['likelihood_explanation'], self.styles['Normal']))
+            story.append(Spacer(1, 8))
+            story.append(Paragraph("Reality Check: Most job postings receive 100-500+ applications. Only 2-5% typically get any response.", 
+                                  self.styles['Normal']))
         
         story.append(Spacer(1, 30))
         

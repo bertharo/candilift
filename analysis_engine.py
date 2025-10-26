@@ -488,27 +488,36 @@ class AnalysisEngine:
         }
     
     def _calculate_likelihood_score(self, ats_score: int, recruiter_score: int) -> Dict[str, Any]:
-        """Calculate likelihood of hearing back based on ATS and recruiter scores"""
+        """Calculate realistic likelihood of hearing back based on harsh job market reality"""
         
         # Weighted combination: ATS (60%) + Recruiter (40%)
         # ATS is weighted higher because it's the first filter
         weighted_score = (ats_score * 0.6) + (recruiter_score * 0.4)
         
-        # Apply realistic market factors
-        # Most applications don't get responses due to competition
-        market_adjustment = 0.7  # 70% of theoretical score due to competition
+        # Apply harsh market reality factors
+        # Industry average: Only 2-5% of applications get ANY response
+        # Even excellent resumes face massive competition
+        market_adjustment = 0.15  # Only 15% of theoretical score due to extreme competition
         
-        final_score = int(weighted_score * market_adjustment)
+        # Additional penalty for common issues
+        competition_penalty = 0.8  # 80% penalty for typical job market competition
         
-        # Generate explanation based on score ranges
-        if final_score >= 70:
-            explanation = "Excellent chance! Your resume should pass both ATS and human review."
-        elif final_score >= 50:
-            explanation = "Good chance. Your resume is competitive but could be improved."
-        elif final_score >= 30:
-            explanation = "Moderate chance. Consider implementing the recommendations below."
+        final_score = int(weighted_score * market_adjustment * competition_penalty)
+        
+        # Cap at realistic maximum (even perfect resumes rarely get responses)
+        final_score = min(final_score, 25)
+        
+        # Generate brutally honest explanations
+        if final_score >= 20:
+            explanation = "Above average chance, but still low. Even excellent resumes face 100+ competitors per role."
+        elif final_score >= 15:
+            explanation = "Below average chance. Most applications get no response due to overwhelming competition."
+        elif final_score >= 10:
+            explanation = "Very low chance. Significant improvements needed to stand out from hundreds of applicants."
+        elif final_score >= 5:
+            explanation = "Minimal chance. Resume needs major improvements to be competitive in today's market."
         else:
-            explanation = "Low chance. Significant improvements needed to increase your odds."
+            explanation = "Extremely low chance. Resume likely won't pass initial screening in competitive market."
         
         return {
             'score': final_score,

@@ -133,7 +133,10 @@ export default function AnalysisResults({ result, onDownloadReport, onGenerateRe
           </div>
           {result.likelihood_explanation && (
             <div className="mt-3 p-3 bg-purple-50 rounded-lg">
-              <p className="text-sm text-purple-700">{result.likelihood_explanation}</p>
+              <p className="text-sm text-purple-700 mb-2">{result.likelihood_explanation}</p>
+              <div className="text-xs text-purple-600 bg-purple-100 p-2 rounded">
+                <strong>Reality Check:</strong> Most job postings receive 100-500+ applications. Only 2-5% typically get any response.
+              </div>
             </div>
           )}
         </div>
