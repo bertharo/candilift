@@ -863,74 +863,44 @@ class AnalysisEngine:
     def _get_generic_recommendations(self, resume_skills: set, resume_years: int) -> List[Dict[str, Any]]:
         """Fallback to generic job recommendations when no specific job is provided"""
         
-        # Create dynamic recommendations based on resume skills
-        skill_categories = {
-            'frontend': {
-                'skills': ['html', 'css', 'react', 'vue', 'angular', 'javascript'],
-                'title': 'Frontend Developer',
-                'description': 'Create user interfaces and user experiences'
-            },
-            'backend': {
-                'skills': ['python', 'java', 'node.js', 'express', 'django', 'flask'],
-                'title': 'Backend Developer', 
-                'description': 'Develop server-side applications and APIs'
-            },
-            'fullstack': {
-                'skills': ['python', 'javascript', 'react', 'node.js', 'express'],
-                'title': 'Full Stack Developer',
-                'description': 'Build complete web applications from frontend to backend'
-            },
-            'data': {
-                'skills': ['python', 'sql', 'pandas', 'numpy', 'machine learning', 'ai'],
-                'title': 'Data Analyst',
-                'description': 'Analyze data to provide business insights'
-            },
-            'devops': {
-                'skills': ['aws', 'docker', 'kubernetes', 'terraform', 'jenkins'],
-                'title': 'DevOps Engineer',
-                'description': 'Manage infrastructure and deployment pipelines'
-            },
-            'mobile': {
-                'skills': ['ios', 'android', 'react native', 'flutter', 'swift', 'kotlin'],
-                'title': 'Mobile Developer',
-                'description': 'Develop mobile applications for iOS and Android'
-            }
-        }
-        
+        # Create dynamic recommendations based on resume skills only
         recommendations = []
         resume_skills_lower = {skill.lower() for skill in resume_skills}
         
-        for category, info in skill_categories.items():
-            category_skills_lower = {skill.lower() for skill in info['skills']}
-            overlap = len(resume_skills_lower.intersection(category_skills_lower))
-            
-            if overlap > 0:  # Only recommend if there's some skill overlap
-                # Calculate experience range based on resume experience
-                if resume_years >= 5:
-                    exp_range = (3, 8)
-                elif resume_years >= 2:
-                    exp_range = (1, 5)
-                else:
-                    exp_range = (0, 3)
-                
-                # Calculate match score
-                skill_score = overlap / len(info['skills'])
-                exp_score = 1.0 if exp_range[0] <= resume_years <= exp_range[1] else 0.7
-                match_score = int((skill_score * 0.7 + exp_score * 0.3) * 100)
-                
-                if match_score > 20:  # Only recommend if reasonable match
-                    recommendations.append({
-                        'title': info['title'],
-                        'match_score': match_score,
-                        'description': info['description'],
-                        'experience_level': f"{exp_range[0]}-{exp_range[1]} years",
-                        'required_skills': info['skills'][:3],
-                        'match_reason': self._get_match_reason(match_score, resume_skills, info['skills'])
-                    })
+        # Define role types based on what skills the candidate has
+        if any(skill in resume_skills_lower for skill in ['html', 'css', 'react', 'vue', 'angular']):
+            recommendations.append({
+                'title': 'Frontend Developer',
+                'match_score': 75,
+                'description': 'Create user interfaces and user experiences',
+                'experience_level': f"{max(0, resume_years-1)}-{resume_years+2} years",
+                'required_skills': ['HTML', 'CSS', 'JavaScript'],
+                'match_reason': 'Good match based on your frontend skills'
+            })
         
-        # Sort by match score and return top 5
+        if any(skill in resume_skills_lower for skill in ['python', 'java', 'node.js', 'sql']):
+            recommendations.append({
+                'title': 'Backend Developer',
+                'match_score': 70,
+                'description': 'Develop server-side applications and APIs',
+                'experience_level': f"{max(0, resume_years-1)}-{resume_years+2} years",
+                'required_skills': ['Python', 'SQL', 'API Development'],
+                'match_reason': 'Good match based on your backend skills'
+            })
+        
+        if any(skill in resume_skills_lower for skill in ['python', 'sql', 'pandas', 'numpy']):
+            recommendations.append({
+                'title': 'Data Analyst',
+                'match_score': 65,
+                'description': 'Analyze data to provide business insights',
+                'experience_level': f"{max(0, resume_years-1)}-{resume_years+2} years",
+                'required_skills': ['Python', 'SQL', 'Data Analysis'],
+                'match_reason': 'Good match based on your data skills'
+            })
+        
+        # Sort by match score and return top 3
         recommendations.sort(key=lambda x: x['match_score'], reverse=True)
-        return recommendations[:5]
+        return recommendations[:3]
     
     def _get_match_reason(self, match_score: float, resume_skills: List[str], required_skills: List[str]) -> str:
         """Generate explanation for why this job is recommended"""

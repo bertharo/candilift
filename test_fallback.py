@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Test the full job recommendations with different skills
+Test what happens when job URL scraping fails
 """
 import sys
 import os
@@ -11,10 +11,10 @@ sys.path.insert(0, os.path.abspath('.'))
 
 from analysis_engine import AnalysisEngine
 
-def test_full_recommendations():
+def test_failed_job_scraping():
     engine = AnalysisEngine()
     
-    # Test with a job that has specific skills
+    # Test with empty job data (simulating failed URL scraping)
     resume_data = {
         'skills': ['Python', 'JavaScript', 'SQL', 'React'],
         'experience': {'years_experience': 3, 'job_titles': ['Developer']},
@@ -31,15 +31,9 @@ def test_full_recommendations():
         }
     }
     
-    # Job with specific skills
+    # Empty job data (simulating failed scraping)
     job_data = {
-        'required_skills': {
-            'programming': ['Python', 'JavaScript', 'Java', 'Go'],
-            'web': ['Node.js', 'Express'],
-            'database': ['MongoDB'],
-            'cloud': ['AWS', 'Docker'],
-            'data': ['AI']
-        },
+        'required_skills': {},  # Empty - no skills extracted
         'optional_skills': {},
         'requirements': {
             'years_experience_required': 2,
@@ -47,30 +41,20 @@ def test_full_recommendations():
         }
     }
     
-    print("Testing full job recommendations...")
+    print("Testing fallback when job URL scraping fails...")
     print(f"Resume skills: {resume_data['skills']}")
-    
-    # Get all job skills
-    all_job_skills = set()
-    for category_skills in job_data['required_skills'].values():
-        all_job_skills.update(category_skills)
-    print(f"All job skills: {list(all_job_skills)}")
-    
-    # Debug: Test entry-level skills directly
-    entry_skills = engine._get_entry_level_skills(list(all_job_skills), set(resume_data['skills']))
-    print(f"Entry-level skills (direct): {entry_skills}")
+    print(f"Job skills: {job_data['required_skills']} (empty)")
     print()
     
-    # Test the full job recommendation function
+    # Test the fallback recommendations
     recommendations = engine._generate_job_recommendations(resume_data, job_data)
     
-    print("Job Recommendations:")
+    print("Fallback Job Recommendations:")
     for i, rec in enumerate(recommendations, 1):
         print(f"{i}. {rec['title']} - {rec['match_score']}% match")
-        print(f"   Description: {rec['description']}")
         print(f"   Required Skills: {rec['required_skills']}")
         print(f"   Reason: {rec['match_reason']}")
         print()
 
 if __name__ == "__main__":
-    test_full_recommendations()
+    test_failed_job_scraping()
