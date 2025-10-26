@@ -5,7 +5,7 @@ import FileUpload from '../components/FileUpload'
 import AnalysisResults from '../components/AnalysisResults'
 
 export default function Home() {
-  const [analysisResult, setAnalysisResult] = useState(null)
+  const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
 
   const handleAnalysis = async (formData: FormData) => {
