@@ -775,10 +775,10 @@ class AnalysisEngine:
         """Get entry-level skills that are easier for beginners"""
         resume_skills_lower = {skill.lower() for skill in resume_skills}
         
-        # Define skill difficulty levels
+        # Define skill difficulty levels (dynamic based on common patterns)
         beginner_friendly = ['html', 'css', 'javascript', 'python', 'sql', 'git']
-        intermediate = ['react', 'node.js', 'express', 'django', 'flask', 'mongodb', 'mysql']
-        advanced = ['go', 'rust', 'kubernetes', 'terraform', 'aws', 'docker', 'microservices', 'architecture']
+        intermediate = ['react', 'node.js', 'django', 'flask', 'mongodb', 'mysql']
+        advanced = ['rust', 'kubernetes', 'terraform', 'aws', 'docker', 'microservices', 'architecture']
         
         entry_level_skills = []
         
@@ -807,7 +807,7 @@ class AnalysisEngine:
         if role_type == 'entry_level':
             # For entry-level, show skills the candidate has + beginner-friendly missing skills
             candidate_has = [skill for skill in job_skills if skill.lower() in resume_skills_lower]
-            beginner_missing = [skill for skill in job_skills if skill.lower() not in resume_skills_lower and skill.lower() in ['html', 'css', 'javascript', 'python', 'sql', 'git', 'react', 'node.js', 'express', 'mongodb']]
+            beginner_missing = [skill for skill in job_skills if skill.lower() not in resume_skills_lower and skill.lower() in ['html', 'css', 'javascript', 'python', 'sql', 'git', 'react', 'node.js', 'mongodb']]
             return (candidate_has + beginner_missing)[:3]
         
         elif role_type == 'senior_level':
@@ -826,8 +826,8 @@ class AnalysisEngine:
         resume_skills_lower = {skill.lower() for skill in resume_skills}
         
         # Define core programming languages and frameworks that should be prioritized
-        core_skills = ['go', 'python', 'javascript', 'java', 'c++', 'c#', 'rust', 'php', 'ruby', 'swift', 'kotlin']
-        frameworks = ['express', 'react', 'vue', 'angular', 'django', 'flask', 'spring', 'node.js']
+        core_skills = ['python', 'javascript', 'java', 'c++', 'c#', 'rust', 'php', 'ruby', 'swift', 'kotlin']
+        frameworks = ['react', 'vue', 'angular', 'django', 'flask', 'spring', 'node.js']
         
         # Separate skills into categories
         candidate_has = []
