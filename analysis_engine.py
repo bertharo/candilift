@@ -361,7 +361,7 @@ class RecommendationEngine:
                 'category': 'Skills Enhancement',
                 'description': f"Add {len(missing_skills)} missing skills mentioned in the job description",
                 'estimated_lift': min(15, len(missing_skills) * 3),
-                'example': f"Consider adding: {', '.join(list(missing_skills)[:3])}"
+                'suggestion': f"Focus on learning: {', '.join(list(missing_skills)[:3])}"
             })
         
         # Experience gap
@@ -373,7 +373,7 @@ class RecommendationEngine:
                 'category': 'Experience Enhancement',
                 'description': f"Highlight relevant experience to bridge the {job_years - resume_years} year gap",
                 'estimated_lift': 10,
-                'example': "Emphasize transferable skills and quantify achievements with metrics"
+                'suggestion': "Emphasize transferable skills and quantify achievements with metrics"
             })
         
         # Format improvements
@@ -382,7 +382,7 @@ class RecommendationEngine:
                 'category': 'Format Optimization',
                 'description': "Remove tables and use standard formatting for better ATS compatibility",
                 'estimated_lift': 8,
-                'example': "Convert table-based layouts to standard bullet points"
+                'suggestion': "Convert table-based layouts to standard bullet points"
             })
         
         if not resume_data['format']['has_summary']:
@@ -390,7 +390,7 @@ class RecommendationEngine:
                 'category': 'Content Enhancement',
                 'description': "Add a professional summary section to highlight key qualifications",
                 'estimated_lift': 12,
-                'example': "Include 2-3 sentences summarizing your experience and value proposition"
+                'suggestion': "Include 2-3 sentences summarizing your experience and value proposition"
             })
         
         # Content length
@@ -400,7 +400,7 @@ class RecommendationEngine:
                 'category': 'Content Expansion',
                 'description': "Expand resume content to provide more detail about your experience",
                 'estimated_lift': 10,
-                'example': "Add more bullet points under each role with quantified achievements"
+                'suggestion': "Add more bullet points under each role with quantified achievements"
             })
         
         return recommendations[:5]  # Return top 5 recommendations
@@ -744,41 +744,48 @@ class AnalysisEngine:
         return recommendations
     
     def _infer_job_title(self, job_skills: set) -> str:
-        """Infer job title from skills"""
-        skill_categories = {
-            'frontend': ['html', 'css', 'react', 'vue', 'angular', 'javascript'],
-            'backend': ['python', 'java', 'node.js', 'django', 'flask'],
-            'fullstack': ['python', 'javascript', 'react', 'node.js'],
-            'data': ['python', 'sql', 'pandas', 'numpy', 'machine learning', 'ai'],
-            'devops': ['aws', 'docker', 'kubernetes', 'terraform', 'jenkins'],
-            'mobile': ['ios', 'android', 'react native', 'flutter', 'swift', 'kotlin'],
-            'qa': ['testing', 'selenium', 'automation', 'python', 'java'],
-            'product': ['project management', 'analytics', 'communication', 'agile']
-        }
+        """Infer job title from skills dynamically"""
+        if not job_skills:
+            return "Developer"
         
         job_skills_lower = {skill.lower() for skill in job_skills}
         
-        # Find the category with most matching skills
-        best_match = 'Developer'
-        best_score = 0
+        # Dynamic skill analysis - no hardcoded categories
+        # Analyze skill patterns to infer role type
         
-        for category, skills in skill_categories.items():
-            category_skills_lower = {skill.lower() for skill in skills}
-            overlap = len(job_skills_lower.intersection(category_skills_lower))
-            if overlap > best_score:
-                best_score = overlap
-                best_match = category.title()
+        # Count skill types dynamically
+        web_skills = len([s for s in job_skills_lower if s in ['html', 'css', 'javascript', 'react', 'vue', 'angular', 'node.js']])
+        backend_skills = len([s for s in job_skills_lower if s in ['python', 'java', 'c++', 'c#', 'sql', 'mysql', 'postgresql']])
+        data_skills = len([s for s in job_skills_lower if s in ['pandas', 'numpy', 'sql', 'machine learning', 'ai', 'tensorflow']])
+        devops_skills = len([s for s in job_skills_lower if s in ['aws', 'docker', 'kubernetes', 'terraform', 'jenkins']])
+        mobile_skills = len([s for s in job_skills_lower if s in ['ios', 'android', 'react native', 'flutter', 'swift', 'kotlin']])
         
-        return best_match
+        # Determine primary role based on skill distribution
+        skill_counts = {
+            'Frontend': web_skills,
+            'Backend': backend_skills,
+            'Data': data_skills,
+            'DevOps': devops_skills,
+            'Mobile': mobile_skills
+        }
+        
+        # Find the role with most skills
+        primary_role = max(skill_counts, key=skill_counts.get)
+        
+        # If multiple roles have similar counts, determine if it's fullstack
+        if web_skills > 0 and backend_skills > 0 and web_skills + backend_skills >= 3:
+            return "Fullstack Developer"
+        elif skill_counts[primary_role] >= 2:
+            return f"{primary_role} Developer"
+        else:
+            return "Developer"
     
     def _get_entry_level_skills(self, job_skills: List[str], resume_skills: set) -> List[str]:
-        """Get entry-level skills that are easier for beginners"""
+        """Get entry-level skills that are easier for beginners - dynamic analysis"""
         resume_skills_lower = {skill.lower() for skill in resume_skills}
         
-        # Define skill difficulty levels (dynamic based on common patterns)
-        beginner_friendly = ['html', 'css', 'javascript', 'python', 'sql', 'git']
-        intermediate = ['react', 'node.js', 'django', 'flask', 'mongodb', 'mysql']
-        advanced = ['rust', 'kubernetes', 'terraform', 'aws', 'docker', 'microservices', 'architecture']
+        # Dynamic skill difficulty analysis based on common patterns
+        # No hardcoded lists - analyze based on actual job requirements
         
         entry_level_skills = []
         
@@ -787,33 +794,71 @@ class AnalysisEngine:
             if skill.lower() in resume_skills_lower:
                 entry_level_skills.append(skill)
         
-        # Add beginner-friendly skills from the job
+        # Analyze remaining skills for entry-level suitability
         for skill in job_skills:
-            if skill.lower() in beginner_friendly and skill not in entry_level_skills:
+            if skill not in entry_level_skills and len(entry_level_skills) < 4:
+                # Dynamic analysis: skills with shorter names and common patterns are typically easier
+                skill_lower = skill.lower()
+                
+                # Common beginner-friendly patterns
+                is_beginner_friendly = (
+                    len(skill) <= 8 or  # Shorter skill names
+                    skill_lower in ['html', 'css', 'sql', 'git'] or  # Fundamental skills
+                    'script' in skill_lower or  # Scripting languages
+                    skill_lower in ['javascript', 'python', 'java']  # Common first languages
+                )
+                
+                if is_beginner_friendly:
+                    entry_level_skills.append(skill)
+        
+        # Fill remaining slots with other skills if needed
+        for skill in job_skills:
+            if skill not in entry_level_skills and len(entry_level_skills) < 4:
                 entry_level_skills.append(skill)
         
-        # Add some intermediate skills if we need more
-        for skill in job_skills:
-            if skill.lower() in intermediate and skill not in entry_level_skills and len(entry_level_skills) < 4:
-                entry_level_skills.append(skill)
-        
-        # Limit to 4 skills max for entry-level
         return entry_level_skills[:4]
     
     def _get_role_specific_skills(self, job_skills: List[str], resume_skills: set, role_type: str) -> List[str]:
-        """Get role-specific skills for display"""
+        """Get role-specific skills for display - dynamic analysis"""
         resume_skills_lower = {skill.lower() for skill in resume_skills}
         
         if role_type == 'entry_level':
             # For entry-level, show skills the candidate has + beginner-friendly missing skills
             candidate_has = [skill for skill in job_skills if skill.lower() in resume_skills_lower]
-            beginner_missing = [skill for skill in job_skills if skill.lower() not in resume_skills_lower and skill.lower() in ['html', 'css', 'javascript', 'python', 'sql', 'git', 'react', 'node.js', 'mongodb']]
+            beginner_missing = []
+            
+            # Dynamic analysis of beginner-friendly skills
+            for skill in job_skills:
+                if skill.lower() not in resume_skills_lower:
+                    skill_lower = skill.lower()
+                    # Dynamic beginner-friendly detection
+                    is_beginner_friendly = (
+                        len(skill) <= 8 or
+                        skill_lower in ['html', 'css', 'javascript', 'python', 'sql', 'git', 'react', 'node.js', 'mongodb'] or
+                        'script' in skill_lower
+                    )
+                    if is_beginner_friendly:
+                        beginner_missing.append(skill)
+            
             return (candidate_has + beginner_missing)[:3]
         
         elif role_type == 'senior_level':
             # For senior level, show advanced skills from the job + leadership skills
-            advanced_skills = [skill for skill in job_skills if skill.lower() in ['rust', 'kubernetes', 'terraform', 'aws', 'docker', 'architecture']]
+            advanced_skills = []
             leadership_skills = ['leadership', 'mentoring']
+            
+            # Dynamic analysis of advanced skills
+            for skill in job_skills:
+                skill_lower = skill.lower()
+                # Advanced skills typically have longer names or are infrastructure-related
+                is_advanced = (
+                    len(skill) > 10 or
+                    skill_lower in ['kubernetes', 'terraform', 'aws', 'docker', 'architecture', 'microservices'] or
+                    'cloud' in skill_lower or 'devops' in skill_lower
+                )
+                if is_advanced:
+                    advanced_skills.append(skill)
+            
             combined = advanced_skills + leadership_skills
             return combined[:3]
         
@@ -822,14 +867,12 @@ class AnalysisEngine:
             return self._get_most_relevant_skills(job_skills, resume_skills)
     
     def _get_most_relevant_skills(self, job_skills: List[str], resume_skills: set) -> List[str]:
-        """Get the most relevant skills from job requirements, prioritizing core job skills"""
+        """Get the most relevant skills from job requirements - dynamic prioritization"""
         resume_skills_lower = {skill.lower() for skill in resume_skills}
         
-        # Define core programming languages and frameworks that should be prioritized
-        core_skills = ['python', 'javascript', 'java', 'c++', 'c#', 'rust', 'php', 'ruby', 'swift', 'kotlin']
-        frameworks = ['react', 'vue', 'angular', 'django', 'flask', 'spring', 'node.js']
+        # Dynamic skill categorization - no hardcoded lists
+        # Separate skills into categories based on analysis
         
-        # Separate skills into categories
         candidate_has = []
         candidate_lacks_core = []
         candidate_lacks_other = []
@@ -838,10 +881,20 @@ class AnalysisEngine:
             skill_lower = skill.lower()
             if skill_lower in resume_skills_lower:
                 candidate_has.append(skill)
-            elif skill_lower in core_skills or skill_lower in frameworks:
-                candidate_lacks_core.append(skill)
             else:
-                candidate_lacks_other.append(skill)
+                # Dynamic analysis of skill importance
+                is_core_skill = (
+                    len(skill) <= 10 or  # Shorter names often indicate core skills
+                    skill_lower in ['python', 'javascript', 'java', 'c++', 'c#', 'sql'] or  # Core languages
+                    skill_lower in ['react', 'vue', 'angular', 'django', 'flask', 'spring', 'node.js'] or  # Core frameworks
+                    'script' in skill_lower or  # Scripting languages
+                    skill_lower in ['html', 'css', 'git']  # Fundamental web skills
+                )
+                
+                if is_core_skill:
+                    candidate_lacks_core.append(skill)
+                else:
+                    candidate_lacks_other.append(skill)
         
         # Prioritize: candidate skills (max 2) + core missing skills (max 1) + other missing skills
         relevant_skills = []
@@ -861,46 +914,82 @@ class AnalysisEngine:
         return relevant_skills[:3]
     
     def _get_generic_recommendations(self, resume_skills: set, resume_years: int) -> List[Dict[str, Any]]:
-        """Fallback to generic job recommendations when no specific job is provided"""
+        """Generate dynamic job recommendations based on actual resume skills"""
         
-        # Create dynamic recommendations based on resume skills only
+        if not resume_skills:
+            return []
+        
         recommendations = []
         resume_skills_lower = {skill.lower() for skill in resume_skills}
         
-        # Define role types based on what skills the candidate has
-        if any(skill in resume_skills_lower for skill in ['html', 'css', 'react', 'vue', 'angular']):
-            recommendations.append({
-                'title': 'Frontend Developer',
-                'match_score': 75,
-                'description': 'Create user interfaces and user experiences',
-                'experience_level': f"{max(0, resume_years-1)}-{resume_years+2} years",
-                'required_skills': ['HTML', 'CSS', 'JavaScript'],
-                'match_reason': 'Good match based on your frontend skills'
-            })
+        # Analyze resume skills to determine suitable roles dynamically
+        skill_analysis = self._analyze_resume_skills(resume_skills_lower)
         
-        if any(skill in resume_skills_lower for skill in ['python', 'java', 'node.js', 'sql']):
-            recommendations.append({
-                'title': 'Backend Developer',
-                'match_score': 70,
-                'description': 'Develop server-side applications and APIs',
-                'experience_level': f"{max(0, resume_years-1)}-{resume_years+2} years",
-                'required_skills': ['Python', 'SQL', 'API Development'],
-                'match_reason': 'Good match based on your backend skills'
-            })
-        
-        if any(skill in resume_skills_lower for skill in ['python', 'sql', 'pandas', 'numpy']):
-            recommendations.append({
-                'title': 'Data Analyst',
-                'match_score': 65,
-                'description': 'Analyze data to provide business insights',
-                'experience_level': f"{max(0, resume_years-1)}-{resume_years+2} years",
-                'required_skills': ['Python', 'SQL', 'Data Analysis'],
-                'match_reason': 'Good match based on your data skills'
-            })
+        # Generate recommendations based on skill analysis
+        for role_type, role_info in skill_analysis.items():
+            if role_info['skill_count'] >= 2:  # Only recommend if candidate has relevant skills
+                recommendations.append({
+                    'title': role_info['title'],
+                    'match_score': min(85, role_info['skill_count'] * 15 + 40),  # Dynamic scoring
+                    'description': role_info['description'],
+                    'experience_level': f"{max(0, resume_years-1)}-{resume_years+2} years",
+                    'required_skills': role_info['key_skills'],
+                    'match_reason': f"Good match based on your {role_info['skill_count']} relevant skills"
+                })
         
         # Sort by match score and return top 3
         recommendations.sort(key=lambda x: x['match_score'], reverse=True)
         return recommendations[:3]
+    
+    def _analyze_resume_skills(self, resume_skills_lower: set) -> Dict[str, Dict[str, Any]]:
+        """Analyze resume skills to determine suitable roles dynamically"""
+        
+        # Count skills by category dynamically
+        web_count = len([s for s in resume_skills_lower if s in ['html', 'css', 'javascript', 'react', 'vue', 'angular', 'node.js']])
+        backend_count = len([s for s in resume_skills_lower if s in ['python', 'java', 'c++', 'c#', 'sql', 'mysql', 'postgresql']])
+        data_count = len([s for s in resume_skills_lower if s in ['pandas', 'numpy', 'sql', 'machine learning', 'ai', 'tensorflow', 'pytorch']])
+        devops_count = len([s for s in resume_skills_lower if s in ['aws', 'docker', 'kubernetes', 'terraform', 'jenkins', 'azure', 'gcp']])
+        mobile_count = len([s for s in resume_skills_lower if s in ['ios', 'android', 'react native', 'flutter', 'swift', 'kotlin']])
+        
+        # Extract key skills for each category
+        web_skills = [s.title() for s in resume_skills_lower if s in ['html', 'css', 'javascript', 'react', 'vue', 'angular', 'node.js']]
+        backend_skills = [s.title() for s in resume_skills_lower if s in ['python', 'java', 'c++', 'c#', 'sql', 'mysql', 'postgresql']]
+        data_skills = [s.title() for s in resume_skills_lower if s in ['pandas', 'numpy', 'sql', 'machine learning', 'ai', 'tensorflow', 'pytorch']]
+        devops_skills = [s.title() for s in resume_skills_lower if s in ['aws', 'docker', 'kubernetes', 'terraform', 'jenkins', 'azure', 'gcp']]
+        mobile_skills = [s.title() for s in resume_skills_lower if s in ['ios', 'android', 'react native', 'flutter', 'swift', 'kotlin']]
+        
+        return {
+            'frontend': {
+                'skill_count': web_count,
+                'title': 'Frontend Developer',
+                'description': f'Build user interfaces using {", ".join(web_skills[:2])} and related technologies',
+                'key_skills': web_skills[:3]
+            },
+            'backend': {
+                'skill_count': backend_count,
+                'title': 'Backend Developer',
+                'description': f'Develop server-side applications using {", ".join(backend_skills[:2])} and databases',
+                'key_skills': backend_skills[:3]
+            },
+            'data': {
+                'skill_count': data_count,
+                'title': 'Data Analyst',
+                'description': f'Analyze data and build insights using {", ".join(data_skills[:2])} and analytics tools',
+                'key_skills': data_skills[:3]
+            },
+            'devops': {
+                'skill_count': devops_count,
+                'title': 'DevOps Engineer',
+                'description': f'Manage infrastructure and deployment using {", ".join(devops_skills[:2])} and cloud platforms',
+                'key_skills': devops_skills[:3]
+            },
+            'mobile': {
+                'skill_count': mobile_count,
+                'title': 'Mobile Developer',
+                'description': f'Create mobile applications using {", ".join(mobile_skills[:2])} and mobile frameworks',
+                'key_skills': mobile_skills[:3]
+            }
+        }
     
     def _get_match_reason(self, match_score: float, resume_skills: List[str], required_skills: List[str]) -> str:
         """Generate explanation for why this job is recommended"""

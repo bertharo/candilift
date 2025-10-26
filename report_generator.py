@@ -140,8 +140,8 @@ class ReportGenerator:
                                       self.styles['Normal']))
                 story.append(Paragraph(f"   Estimated Improvement: +{rec['estimated_lift']}%", 
                                       self.styles['Normal']))
-                if 'example' in rec:
-                    story.append(Paragraph(f"   Example: {rec['example']}", 
+                if 'suggestion' in rec:
+                    story.append(Paragraph(f"   Suggestion: {rec['suggestion']}", 
                                           self.styles['Normal']))
                 story.append(Spacer(1, 12))
         
@@ -354,8 +354,8 @@ class ResumeGenerator:
             
             for i, rec in enumerate(recommendations[:3], 1):  # Limit to 3
                 doc.add_paragraph(f"{i}. {rec['description']}", style='CustomNormal')
-                if 'example' in rec:
-                    doc.add_paragraph(f"   Example: {rec['example']}", style='CustomNormal')
+                if 'suggestion' in rec:
+                    doc.add_paragraph(f"   Suggestion: {rec['suggestion']}", style='CustomNormal')
             
             doc.add_paragraph()  # Spacing
 

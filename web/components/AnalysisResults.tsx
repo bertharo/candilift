@@ -222,10 +222,10 @@ export default function AnalysisResults({ result, onDownloadReport, onGenerateRe
                   </div>
                 </div>
                 <p className="text-sm text-yellow-700 mb-3">{rec.description}</p>
-                {rec.example && (
+                {rec.suggestion && (
                   <div className="bg-white p-3 rounded border border-yellow-200">
-                    <p className="text-xs text-gray-600 mb-1 font-medium">Example:</p>
-                    <p className="text-sm text-gray-800">{rec.example}</p>
+                    <p className="text-xs text-gray-600 mb-1 font-medium">Suggestion:</p>
+                    <p className="text-sm text-gray-800">{rec.suggestion}</p>
                   </div>
                 )}
               </div>
