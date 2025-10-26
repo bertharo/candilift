@@ -476,6 +476,9 @@ class AnalysisEngine:
             job_data
         )
         
+        # Generate job recommendations
+        job_recommendations = self._generate_job_recommendations(resume_data, job_data)
+        
         return {
             'ats_score': ats_result['score'],
             'recruiter_score': recruiter_result['score'],
@@ -486,6 +489,7 @@ class AnalysisEngine:
             'score_drivers': ats_result['drivers'] + recruiter_result['drivers'],
             'recommendations': recommendations,
             'gap_analysis': gap_analysis,
+            'job_recommendations': job_recommendations,
             'debug_info': {
                 'resume_text_preview': resume_text[:200],
                 'job_text_preview': job_text[:200],
@@ -639,3 +643,132 @@ class AnalysisEngine:
             })
         
         return explanation, improvements
+    
+    def _generate_job_recommendations(self, resume_data: Dict, job_data: Dict) -> List[Dict[str, Any]]:
+        """Generate job recommendations based on resume analysis"""
+        
+        resume_skills = set(resume_data['skills'])
+        resume_years = resume_data['experience']['years_experience']
+        
+        # Define job categories and their requirements
+        job_categories = {
+            'software_engineer': {
+                'title': 'Software Engineer',
+                'required_skills': ['python', 'javascript', 'java', 'c++', 'sql'],
+                'preferred_skills': ['react', 'node.js', 'aws', 'docker'],
+                'experience_range': (1, 5),
+                'match_score': 0,
+                'description': 'Build and maintain software applications'
+            },
+            'frontend_developer': {
+                'title': 'Frontend Developer',
+                'required_skills': ['javascript', 'html', 'css', 'react'],
+                'preferred_skills': ['vue', 'angular', 'typescript', 'webpack'],
+                'experience_range': (1, 4),
+                'match_score': 0,
+                'description': 'Create user interfaces and user experiences'
+            },
+            'backend_developer': {
+                'title': 'Backend Developer',
+                'required_skills': ['python', 'java', 'sql', 'api'],
+                'preferred_skills': ['django', 'flask', 'spring', 'postgresql'],
+                'experience_range': (2, 6),
+                'match_score': 0,
+                'description': 'Develop server-side applications and APIs'
+            },
+            'data_analyst': {
+                'title': 'Data Analyst',
+                'required_skills': ['python', 'sql', 'excel', 'statistics'],
+                'preferred_skills': ['pandas', 'numpy', 'tableau', 'power bi'],
+                'experience_range': (1, 4),
+                'match_score': 0,
+                'description': 'Analyze data to provide business insights'
+            },
+            'devops_engineer': {
+                'title': 'DevOps Engineer',
+                'required_skills': ['aws', 'docker', 'kubernetes', 'linux'],
+                'preferred_skills': ['terraform', 'jenkins', 'python', 'bash'],
+                'experience_range': (2, 6),
+                'match_score': 0,
+                'description': 'Manage infrastructure and deployment pipelines'
+            },
+            'product_manager': {
+                'title': 'Product Manager',
+                'required_skills': ['project management', 'analytics', 'communication'],
+                'preferred_skills': ['agile', 'scrum', 'user research', 'business analysis'],
+                'experience_range': (3, 8),
+                'match_score': 0,
+                'description': 'Lead product strategy and development'
+            },
+            'qa_engineer': {
+                'title': 'QA Engineer',
+                'required_skills': ['testing', 'automation', 'selenium', 'python'],
+                'preferred_skills': ['junit', 'testng', 'api testing', 'performance testing'],
+                'experience_range': (1, 5),
+                'match_score': 0,
+                'description': 'Ensure software quality through testing'
+            },
+            'mobile_developer': {
+                'title': 'Mobile Developer',
+                'required_skills': ['ios', 'android', 'swift', 'kotlin'],
+                'preferred_skills': ['react native', 'flutter', 'xamarin', 'javascript'],
+                'experience_range': (1, 4),
+                'match_score': 0,
+                'description': 'Develop mobile applications for iOS and Android'
+            }
+        }
+        
+        # Calculate match scores for each job category
+        for category, job_info in job_categories.items():
+            required_skills = set([skill.lower() for skill in job_info['required_skills']])
+            preferred_skills = set([skill.lower() for skill in job_info['preferred_skills']])
+            resume_skills_lower = set([skill.lower() for skill in resume_skills])
+            
+            # Calculate skill overlap
+            required_match = len(resume_skills_lower.intersection(required_skills))
+            preferred_match = len(resume_skills_lower.intersection(preferred_skills))
+            
+            # Calculate experience fit
+            exp_min, exp_max = job_info['experience_range']
+            if exp_min <= resume_years <= exp_max:
+                exp_score = 1.0
+            elif resume_years < exp_min:
+                exp_score = 0.5  # Underqualified but might work
+            else:
+                exp_score = 0.8  # Overqualified but still relevant
+            
+            # Calculate overall match score
+            skill_score = (required_match * 2 + preferred_match) / (len(required_skills) * 2 + len(preferred_skills))
+            job_info['match_score'] = (skill_score * 0.7 + exp_score * 0.3) * 100
+        
+        # Sort by match score and return top recommendations
+        sorted_jobs = sorted(job_categories.values(), key=lambda x: x['match_score'], reverse=True)
+        
+        recommendations = []
+        for job in sorted_jobs[:5]:  # Top 5 recommendations
+            if job['match_score'] > 20:  # Only recommend if reasonable match
+                recommendations.append({
+                    'title': job['title'],
+                    'match_score': int(job['match_score']),
+                    'description': job['description'],
+                    'experience_level': f"{job['experience_range'][0]}-{job['experience_range'][1]} years",
+                    'required_skills': job['required_skills'][:3],  # Top 3 required skills
+                    'match_reason': self._get_match_reason(job['match_score'], resume_skills, job['required_skills'])
+                })
+        
+        return recommendations
+    
+    def _get_match_reason(self, match_score: float, resume_skills: List[str], required_skills: List[str]) -> str:
+        """Generate explanation for why this job is recommended"""
+        
+        resume_skills_lower = [skill.lower() for skill in resume_skills]
+        matching_skills = [skill for skill in required_skills if skill.lower() in resume_skills_lower]
+        
+        if match_score >= 70:
+            return f"Excellent match! You have {len(matching_skills)} of the key required skills: {', '.join(matching_skills[:2])}"
+        elif match_score >= 50:
+            return f"Good match. You have {len(matching_skills)} required skills and could learn the others"
+        elif match_score >= 30:
+            return f"Moderate match. You have some relevant skills but may need additional training"
+        else:
+            return f"Entry-level opportunity. Focus on learning: {', '.join(required_skills[:2])}"

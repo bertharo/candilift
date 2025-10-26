@@ -234,6 +234,72 @@ export default function AnalysisResults({ result, onDownloadReport, onGenerateRe
         </div>
       )}
 
+      {/* Job Recommendations */}
+      {result.job_recommendations && result.job_recommendations.length > 0 && (
+        <div className="card p-6">
+          <h3 className="text-xl font-semibold text-gray-900 mb-6">Recommended Job Roles</h3>
+          <p className="text-gray-600 mb-6">Based on your skills and experience, here are roles that might be a better fit:</p>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {result.job_recommendations.map((job: any, index: number) => (
+              <div key={index} className="border border-gray-200 rounded-lg p-4 hover:border-indigo-300 transition-colors">
+                <div className="flex items-start justify-between mb-3">
+                  <div>
+                    <h4 className="font-semibold text-gray-900 text-lg">{job.title}</h4>
+                    <p className="text-sm text-gray-600">{job.description}</p>
+                  </div>
+                  <div className={`px-2 py-1 rounded-full text-xs font-medium ${
+                    job.match_score >= 70 ? 'bg-green-100 text-green-700' :
+                    job.match_score >= 50 ? 'bg-blue-100 text-blue-700' :
+                    job.match_score >= 30 ? 'bg-yellow-100 text-yellow-700' :
+                    'bg-gray-100 text-gray-700'
+                  }`}>
+                    {job.match_score}% match
+                  </div>
+                </div>
+                
+                <div className="space-y-2 text-sm">
+                  <div className="flex items-center space-x-2">
+                    <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="text-gray-600">Experience: {job.experience_level}</span>
+                  </div>
+                  
+                  <div className="flex items-start space-x-2">
+                    <svg className="w-4 h-4 text-gray-400 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+                    </svg>
+                    <div>
+                      <span className="text-gray-600">Key Skills: </span>
+                      <span className="text-gray-800">{job.required_skills.join(', ')}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="mt-3 p-2 bg-gray-50 rounded text-xs text-gray-700">
+                    <strong>Why this role:</strong> {job.match_reason}
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+          
+          <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+            <div className="flex items-start space-x-3">
+              <svg className="w-5 h-5 text-blue-600 mt-0.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              <div>
+                <h4 className="font-medium text-blue-800 mb-1">Pro Tip</h4>
+                <p className="text-sm text-blue-700">
+                  Focus on roles with 50%+ match scores. These positions align better with your background and will have higher response rates.
+                </p>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Gap Analysis */}
       {result.gap_analysis && (
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
