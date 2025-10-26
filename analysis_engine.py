@@ -676,15 +676,15 @@ class AnalysisEngine:
         similar_job_categories = {
             'similar_role': {
                 'title': f'Similar {self._infer_job_title(job_skills)} Role',
-                'required_skills': job_skills_list[:5],  # Use actual job skills
-                'preferred_skills': job_skills_list[5:8] if len(job_skills_list) > 5 else [],
+                'required_skills': job_skills_list,  # Use all actual job skills
+                'preferred_skills': [],
                 'experience_range': (1, 5),  # Generic range
                 'match_score': 0,
                 'description': f'Role with similar requirements to the one you applied for'
             },
             'entry_level': {
                 'title': f'Entry-Level {self._infer_job_title(job_skills)} Position',
-                'required_skills': job_skills_list[:3],  # Fewer requirements
+                'required_skills': self._get_entry_level_skills(job_skills_list, resume_skills),  # Fewer requirements
                 'preferred_skills': [],
                 'experience_range': (0, 2),
                 'match_score': 0,
@@ -737,7 +737,7 @@ class AnalysisEngine:
                     'match_score': int(job['match_score']),
                     'description': job['description'],
                     'experience_level': f"{job['experience_range'][0]}-{job['experience_range'][1]} years",
-                    'required_skills': self._get_most_relevant_skills(job['required_skills'], resume_skills),
+                    'required_skills': job['required_skills'][:3],  # Just show first 3 skills from the role
                     'match_reason': self._get_match_reason(job['match_score'], resume_skills, job['required_skills'])
                 })
         
@@ -770,6 +770,56 @@ class AnalysisEngine:
                 best_match = category.title()
         
         return best_match
+    
+    def _get_entry_level_skills(self, job_skills: List[str], resume_skills: set) -> List[str]:
+        """Get entry-level skills that are easier for beginners"""
+        resume_skills_lower = {skill.lower() for skill in resume_skills}
+        
+        # Define skill difficulty levels
+        beginner_friendly = ['html', 'css', 'javascript', 'python', 'sql', 'git']
+        intermediate = ['react', 'node.js', 'express', 'django', 'flask', 'mongodb', 'mysql']
+        advanced = ['go', 'rust', 'kubernetes', 'terraform', 'aws', 'docker', 'microservices', 'architecture']
+        
+        entry_level_skills = []
+        
+        # Prioritize skills the candidate already has
+        for skill in job_skills:
+            if skill.lower() in resume_skills_lower:
+                entry_level_skills.append(skill)
+        
+        # Add beginner-friendly skills from the job
+        for skill in job_skills:
+            if skill.lower() in beginner_friendly and skill not in entry_level_skills:
+                entry_level_skills.append(skill)
+        
+        # Add some intermediate skills if we need more
+        for skill in job_skills:
+            if skill.lower() in intermediate and skill not in entry_level_skills and len(entry_level_skills) < 4:
+                entry_level_skills.append(skill)
+        
+        # Limit to 4 skills max for entry-level
+        return entry_level_skills[:4]
+    
+    def _get_role_specific_skills(self, job_skills: List[str], resume_skills: set, role_type: str) -> List[str]:
+        """Get role-specific skills for display"""
+        resume_skills_lower = {skill.lower() for skill in resume_skills}
+        
+        if role_type == 'entry_level':
+            # For entry-level, show skills the candidate has + beginner-friendly missing skills
+            candidate_has = [skill for skill in job_skills if skill.lower() in resume_skills_lower]
+            beginner_missing = [skill for skill in job_skills if skill.lower() not in resume_skills_lower and skill.lower() in ['html', 'css', 'javascript', 'python', 'sql', 'git', 'react', 'node.js', 'express', 'mongodb']]
+            return (candidate_has + beginner_missing)[:3]
+        
+        elif role_type == 'senior_level':
+            # For senior level, show advanced skills from the job + leadership skills
+            advanced_skills = [skill for skill in job_skills if skill.lower() in ['go', 'rust', 'kubernetes', 'terraform', 'aws', 'docker', 'architecture']]
+            leadership_skills = ['leadership', 'mentoring']
+            combined = advanced_skills + leadership_skills
+            return combined[:3]
+        
+        else:  # similar_role
+            # For similar role, show the most relevant skills
+            return self._get_most_relevant_skills(job_skills, resume_skills)
     
     def _get_most_relevant_skills(self, job_skills: List[str], resume_skills: set) -> List[str]:
         """Get the most relevant skills from job requirements, prioritizing core job skills"""
