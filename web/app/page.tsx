@@ -46,49 +46,10 @@ export default function Home() {
         }
       }
       
-      // If all URLs failed, try a mock response for demo purposes
+      // If all URLs failed, show error instead of mock data
       if (lastError) {
-        console.log('All API endpoints failed, using mock response for demo')
-        const mockResult = {
-          ats_score: 78,
-          recruiter_score: 85,
-          score_drivers: [
-            {
-              component: "Keyword Matching",
-              score: 82,
-              explanation: "Good keyword alignment with job requirements"
-            },
-            {
-              component: "Format Compliance", 
-              score: 75,
-              explanation: "Resume format is mostly ATS-friendly"
-            },
-            {
-              component: "Experience Relevance",
-              score: 88,
-              explanation: "Strong relevant experience demonstrated"
-            }
-          ],
-          recommendations: [
-            {
-              category: "Skills Enhancement",
-              description: "Add more specific technical skills mentioned in the job description",
-              estimated_lift: 12,
-              example: "Instead of 'experienced with databases', use '5+ years PostgreSQL, MongoDB'"
-            },
-            {
-              category: "Quantify Achievements",
-              description: "Add more metrics and numbers to your accomplishments",
-              estimated_lift: 8,
-              example: "Increased team productivity by 25% through process optimization"
-            }
-          ],
-          gap_analysis: {
-            missing_skills: ["Python", "Machine Learning", "AWS"],
-            present_skills: ["JavaScript", "React", "Node.js", "SQL"]
-          }
-        }
-        setAnalysisResult(mockResult)
+        console.error('All API endpoints failed:', lastError)
+        alert(`Analysis failed: All backend services are unavailable. Please try again later or check if the backend is running.`)
         return
       }
       
