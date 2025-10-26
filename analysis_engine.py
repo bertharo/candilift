@@ -157,14 +157,30 @@ class JobAnalyzer:
             return ""
     
     def extract_required_skills(self, text: str) -> Dict[str, List[str]]:
-        """Extract required skills from job description"""
+        """Extract required skills from job description with context awareness"""
         text_lower = text.lower()
         required_skills = {}
         
         for category, skills in self.skills_keywords.items():
             category_skills = []
             for skill in skills:
-                if skill in text_lower:
+                # Use word boundary matching to avoid false positives
+                import re
+                # Create pattern that matches whole words or common variations
+                if skill == 'go':
+                    # Only match "go" if it's followed by programming context
+                    pattern = r'\bgo\s+(?:programming|language|code|development|backend|server)\b'
+                elif skill == 'ai':
+                    # Only match "ai" if it's in AI/ML context
+                    pattern = r'\b(?:artificial intelligence|ai|machine learning|ml)\b'
+                elif skill == 'express':
+                    # Only match "express" if it's Express.js context
+                    pattern = r'\bexpress\.?js?\b'
+                else:
+                    # For other skills, use word boundary matching
+                    pattern = r'\b' + re.escape(skill) + r'\b'
+                
+                if re.search(pattern, text_lower):
                     category_skills.append(skill.title())
             if category_skills:
                 required_skills[category] = category_skills
@@ -676,7 +692,7 @@ class AnalysisEngine:
         similar_job_categories = {
             'similar_role': {
                 'title': f'Similar {self._infer_job_title(job_skills)} Role',
-                'required_skills': job_skills_list,  # Use all actual job skills
+                'required_skills': self._get_most_relevant_skills(job_skills_list, resume_skills),  # Use dynamic filtering
                 'preferred_skills': [],
                 'experience_range': (1, 5),  # Generic range
                 'match_score': 0,
@@ -692,7 +708,7 @@ class AnalysisEngine:
             },
             'senior_level': {
                 'title': f'Senior {self._infer_job_title(job_skills)} Position',
-                'required_skills': job_skills_list + ['leadership', 'mentoring', 'architecture'],  # More requirements
+                'required_skills': self._get_role_specific_skills(job_skills_list, resume_skills, 'senior_level'),  # Use dynamic filtering
                 'preferred_skills': ['strategy', 'team management'],
                 'experience_range': (5, 10),
                 'match_score': 0,
