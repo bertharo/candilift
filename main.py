@@ -118,5 +118,7 @@ async def analyze_resume(
         raise HTTPException(status_code=500, detail=f"Analysis failed: {str(e)}")
 
 if __name__ == "__main__":
+    import uvicorn
     port = int(os.environ.get("PORT", 8000))
+    print(f"Starting CandiLift API on port {port}")
     uvicorn.run(app, host="0.0.0.0", port=port)
