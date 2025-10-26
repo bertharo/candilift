@@ -468,9 +468,14 @@ class AnalysisEngine:
             'present_skills': list(resume_skills_set.intersection(job_skills_set))
         }
         
+        # Calculate likelihood of hearing back
+        likelihood_score = self._calculate_likelihood_score(ats_result['score'], recruiter_result['score'])
+        
         return {
             'ats_score': ats_result['score'],
             'recruiter_score': recruiter_result['score'],
+            'likelihood_score': likelihood_score['score'],
+            'likelihood_explanation': likelihood_score['explanation'],
             'score_drivers': ats_result['drivers'] + recruiter_result['drivers'],
             'recommendations': recommendations,
             'gap_analysis': gap_analysis,
@@ -480,4 +485,32 @@ class AnalysisEngine:
                 'resume_skills_found': resume_skills,
                 'job_skills_found': job_skills
             }
+        }
+    
+    def _calculate_likelihood_score(self, ats_score: int, recruiter_score: int) -> Dict[str, Any]:
+        """Calculate likelihood of hearing back based on ATS and recruiter scores"""
+        
+        # Weighted combination: ATS (60%) + Recruiter (40%)
+        # ATS is weighted higher because it's the first filter
+        weighted_score = (ats_score * 0.6) + (recruiter_score * 0.4)
+        
+        # Apply realistic market factors
+        # Most applications don't get responses due to competition
+        market_adjustment = 0.7  # 70% of theoretical score due to competition
+        
+        final_score = int(weighted_score * market_adjustment)
+        
+        # Generate explanation based on score ranges
+        if final_score >= 70:
+            explanation = "Excellent chance! Your resume should pass both ATS and human review."
+        elif final_score >= 50:
+            explanation = "Good chance. Your resume is competitive but could be improved."
+        elif final_score >= 30:
+            explanation = "Moderate chance. Consider implementing the recommendations below."
+        else:
+            explanation = "Low chance. Significant improvements needed to increase your odds."
+        
+        return {
+            'score': final_score,
+            'explanation': explanation
         }

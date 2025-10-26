@@ -57,7 +57,7 @@ export default function AnalysisResults({ result, onDownloadReport, onGenerateRe
       </div>
 
       {/* Overall Scores */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="card p-6">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-3">
@@ -106,6 +106,36 @@ export default function AnalysisResults({ result, onDownloadReport, onGenerateRe
               style={{ width: `${result.recruiter_score || 0}%` }}
             ></div>
           </div>
+        </div>
+
+        <div className="card p-6">
+          <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center space-x-3">
+              <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
+                <svg className="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6" />
+                </svg>
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900">Likelihood Score</h3>
+                <p className="text-sm text-gray-600">Chance of hearing back</p>
+              </div>
+            </div>
+            <div className={`px-3 py-1 rounded-full text-sm font-medium ${getScoreColor(result.likelihood_score || 0)}`}>
+              {result.likelihood_score || 'N/A'}%
+            </div>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-2">
+            <div 
+              className="bg-purple-600 h-2 rounded-full transition-all duration-500"
+              style={{ width: `${result.likelihood_score || 0}%` }}
+            ></div>
+          </div>
+          {result.likelihood_explanation && (
+            <div className="mt-3 p-3 bg-purple-50 rounded-lg">
+              <p className="text-sm text-purple-700">{result.likelihood_explanation}</p>
+            </div>
+          )}
         </div>
       </div>
 

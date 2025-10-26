@@ -86,7 +86,9 @@ class ReportGenerator:
             ['ATS Compatibility', f"{analysis_result.get('ats_score', 0)}%", 
              self._get_score_status(analysis_result.get('ats_score', 0))],
             ['Recruiter Appeal', f"{analysis_result.get('recruiter_score', 0)}%", 
-             self._get_score_status(analysis_result.get('recruiter_score', 0))]
+             self._get_score_status(analysis_result.get('recruiter_score', 0))],
+            ['Likelihood of Hearing Back', f"{analysis_result.get('likelihood_score', 0)}%", 
+             self._get_score_status(analysis_result.get('likelihood_score', 0))]
         ]
         
         scores_table = Table(scores_data, colWidths=[2*inch, 1.5*inch, 1.5*inch])
@@ -102,6 +104,13 @@ class ReportGenerator:
         ]))
         
         story.append(scores_table)
+        
+        # Add likelihood explanation if available
+        if analysis_result.get('likelihood_explanation'):
+            story.append(Spacer(1, 15))
+            story.append(Paragraph("Likelihood Assessment", self.styles['SectionHeader']))
+            story.append(Paragraph(analysis_result['likelihood_explanation'], self.styles['Normal']))
+        
         story.append(Spacer(1, 30))
         
         # Score Drivers
