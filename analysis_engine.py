@@ -667,31 +667,36 @@ class AnalysisEngine:
     def _find_similar_jobs(self, resume_skills: set, job_skills: set, resume_years: int) -> List[Dict[str, Any]]:
         """Find jobs similar to the one provided"""
         
-        # Define job categories that might be similar to the provided job
+        if not job_skills:
+            return []
+        
+        job_skills_list = list(job_skills)
+        
+        # Create dynamic job variations based on the actual job
         similar_job_categories = {
             'similar_role': {
-                'title': 'Similar Role',
-                'required_skills': list(job_skills)[:5],  # Use actual job skills
-                'preferred_skills': list(job_skills)[5:8] if len(job_skills) > 5 else [],
+                'title': f'Similar {self._infer_job_title(job_skills)} Role',
+                'required_skills': job_skills_list[:5],  # Use actual job skills
+                'preferred_skills': job_skills_list[5:8] if len(job_skills_list) > 5 else [],
                 'experience_range': (1, 5),  # Generic range
                 'match_score': 0,
-                'description': 'Role similar to the one you applied for'
+                'description': f'Role with similar requirements to the one you applied for'
             },
             'entry_level': {
-                'title': 'Entry-Level Position',
-                'required_skills': list(job_skills)[:3],  # Fewer requirements
+                'title': f'Entry-Level {self._infer_job_title(job_skills)} Position',
+                'required_skills': job_skills_list[:3],  # Fewer requirements
                 'preferred_skills': [],
                 'experience_range': (0, 2),
                 'match_score': 0,
-                'description': 'Entry-level version of the role you applied for'
+                'description': f'Entry-level position requiring fewer skills than the original role'
             },
             'senior_level': {
-                'title': 'Senior Position',
-                'required_skills': list(job_skills) + ['leadership', 'mentoring'],  # More requirements
-                'preferred_skills': ['architecture', 'strategy'],
+                'title': f'Senior {self._infer_job_title(job_skills)} Position',
+                'required_skills': job_skills_list + ['leadership', 'mentoring', 'architecture'],  # More requirements
+                'preferred_skills': ['strategy', 'team management'],
                 'experience_range': (5, 10),
                 'match_score': 0,
-                'description': 'Senior version requiring more experience'
+                'description': f'Senior-level position requiring more experience and leadership skills'
             }
         }
         
@@ -738,92 +743,105 @@ class AnalysisEngine:
         
         return recommendations
     
+    def _infer_job_title(self, job_skills: set) -> str:
+        """Infer job title from skills"""
+        skill_categories = {
+            'frontend': ['html', 'css', 'react', 'vue', 'angular', 'javascript'],
+            'backend': ['python', 'java', 'node.js', 'express', 'django', 'flask'],
+            'fullstack': ['python', 'javascript', 'react', 'node.js', 'express'],
+            'data': ['python', 'sql', 'pandas', 'numpy', 'machine learning', 'ai'],
+            'devops': ['aws', 'docker', 'kubernetes', 'terraform', 'jenkins'],
+            'mobile': ['ios', 'android', 'react native', 'flutter', 'swift', 'kotlin'],
+            'qa': ['testing', 'selenium', 'automation', 'python', 'java'],
+            'product': ['project management', 'analytics', 'communication', 'agile']
+        }
+        
+        job_skills_lower = {skill.lower() for skill in job_skills}
+        
+        # Find the category with most matching skills
+        best_match = 'Developer'
+        best_score = 0
+        
+        for category, skills in skill_categories.items():
+            category_skills_lower = {skill.lower() for skill in skills}
+            overlap = len(job_skills_lower.intersection(category_skills_lower))
+            if overlap > best_score:
+                best_score = overlap
+                best_match = category.title()
+        
+        return best_match
+    
     def _get_generic_recommendations(self, resume_skills: set, resume_years: int) -> List[Dict[str, Any]]:
         """Fallback to generic job recommendations when no specific job is provided"""
         
-        # Define generic job categories
-        job_categories = {
-            'software_engineer': {
-                'title': 'Software Engineer',
-                'required_skills': ['python', 'javascript', 'java', 'c++', 'sql'],
-                'preferred_skills': ['react', 'node.js', 'aws', 'docker'],
-                'experience_range': (1, 5),
-                'match_score': 0,
-                'description': 'Build and maintain software applications'
-            },
-            'frontend_developer': {
+        # Create dynamic recommendations based on resume skills
+        skill_categories = {
+            'frontend': {
+                'skills': ['html', 'css', 'react', 'vue', 'angular', 'javascript'],
                 'title': 'Frontend Developer',
-                'required_skills': ['javascript', 'html', 'css', 'react'],
-                'preferred_skills': ['vue', 'angular', 'typescript', 'webpack'],
-                'experience_range': (1, 4),
-                'match_score': 0,
                 'description': 'Create user interfaces and user experiences'
             },
-            'backend_developer': {
-                'title': 'Backend Developer',
-                'required_skills': ['python', 'java', 'sql', 'api'],
-                'preferred_skills': ['django', 'flask', 'spring', 'postgresql'],
-                'experience_range': (2, 6),
-                'match_score': 0,
+            'backend': {
+                'skills': ['python', 'java', 'node.js', 'express', 'django', 'flask'],
+                'title': 'Backend Developer', 
                 'description': 'Develop server-side applications and APIs'
             },
-            'data_analyst': {
+            'fullstack': {
+                'skills': ['python', 'javascript', 'react', 'node.js', 'express'],
+                'title': 'Full Stack Developer',
+                'description': 'Build complete web applications from frontend to backend'
+            },
+            'data': {
+                'skills': ['python', 'sql', 'pandas', 'numpy', 'machine learning', 'ai'],
                 'title': 'Data Analyst',
-                'required_skills': ['python', 'sql', 'excel', 'statistics'],
-                'preferred_skills': ['pandas', 'numpy', 'tableau', 'power bi'],
-                'experience_range': (1, 4),
-                'match_score': 0,
                 'description': 'Analyze data to provide business insights'
             },
-            'devops_engineer': {
+            'devops': {
+                'skills': ['aws', 'docker', 'kubernetes', 'terraform', 'jenkins'],
                 'title': 'DevOps Engineer',
-                'required_skills': ['aws', 'docker', 'kubernetes', 'linux'],
-                'preferred_skills': ['terraform', 'jenkins', 'python', 'bash'],
-                'experience_range': (2, 6),
-                'match_score': 0,
                 'description': 'Manage infrastructure and deployment pipelines'
+            },
+            'mobile': {
+                'skills': ['ios', 'android', 'react native', 'flutter', 'swift', 'kotlin'],
+                'title': 'Mobile Developer',
+                'description': 'Develop mobile applications for iOS and Android'
             }
         }
         
-        # Calculate match scores for each job category
-        for category, job_info in job_categories.items():
-            required_skills = set([skill.lower() for skill in job_info['required_skills']])
-            preferred_skills = set([skill.lower() for skill in job_info['preferred_skills']])
-            resume_skills_lower = set([skill.lower() for skill in resume_skills])
-            
-            # Calculate skill overlap
-            required_match = len(resume_skills_lower.intersection(required_skills))
-            preferred_match = len(resume_skills_lower.intersection(preferred_skills))
-            
-            # Calculate experience fit
-            exp_min, exp_max = job_info['experience_range']
-            if exp_min <= resume_years <= exp_max:
-                exp_score = 1.0
-            elif resume_years < exp_min:
-                exp_score = 0.5  # Underqualified but might work
-            else:
-                exp_score = 0.8  # Overqualified but still relevant
-            
-            # Calculate overall match score
-            skill_score = (required_match * 2 + preferred_match) / (len(required_skills) * 2 + len(preferred_skills))
-            job_info['match_score'] = (skill_score * 0.7 + exp_score * 0.3) * 100
-        
-        # Sort by match score and return top recommendations
-        sorted_jobs = sorted(job_categories.values(), key=lambda x: x['match_score'], reverse=True)
-        
         recommendations = []
-        for job in sorted_jobs[:5]:  # Top 5 recommendations
-            if job['match_score'] > 20:  # Only recommend if reasonable match
-                recommendations.append({
-                    'title': job['title'],
-                    'match_score': int(job['match_score']),
-                    'description': job['description'],
-                    'experience_level': f"{job['experience_range'][0]}-{job['experience_range'][1]} years",
-                    'required_skills': job['required_skills'][:3],  # Top 3 required skills
-                    'match_reason': self._get_match_reason(job['match_score'], resume_skills, job['required_skills'])
-                })
+        resume_skills_lower = {skill.lower() for skill in resume_skills}
         
-        return recommendations
+        for category, info in skill_categories.items():
+            category_skills_lower = {skill.lower() for skill in info['skills']}
+            overlap = len(resume_skills_lower.intersection(category_skills_lower))
+            
+            if overlap > 0:  # Only recommend if there's some skill overlap
+                # Calculate experience range based on resume experience
+                if resume_years >= 5:
+                    exp_range = (3, 8)
+                elif resume_years >= 2:
+                    exp_range = (1, 5)
+                else:
+                    exp_range = (0, 3)
+                
+                # Calculate match score
+                skill_score = overlap / len(info['skills'])
+                exp_score = 1.0 if exp_range[0] <= resume_years <= exp_range[1] else 0.7
+                match_score = int((skill_score * 0.7 + exp_score * 0.3) * 100)
+                
+                if match_score > 20:  # Only recommend if reasonable match
+                    recommendations.append({
+                        'title': info['title'],
+                        'match_score': match_score,
+                        'description': info['description'],
+                        'experience_level': f"{exp_range[0]}-{exp_range[1]} years",
+                        'required_skills': info['skills'][:3],
+                        'match_reason': self._get_match_reason(match_score, resume_skills, info['skills'])
+                    })
+        
+        # Sort by match score and return top 5
+        recommendations.sort(key=lambda x: x['match_score'], reverse=True)
+        return recommendations[:5]
     
     def _get_match_reason(self, match_score: float, resume_skills: List[str], required_skills: List[str]) -> str:
         """Generate explanation for why this job is recommended"""
