@@ -92,7 +92,8 @@ export default function Home() {
       
     } catch (error) {
       console.error('Analysis failed:', error)
-      alert(`Analysis failed: ${error.message}. Please check if the backend service is running.`)
+      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred'
+      alert(`Analysis failed: ${errorMessage}. Please check if the backend service is running.`)
     } finally {
       setIsLoading(false)
     }
