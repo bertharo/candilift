@@ -134,7 +134,41 @@ export default function AnalysisResults({ result, onDownloadReport, onGenerateRe
           {result.likelihood_explanation && (
             <div className="mt-3 p-3 bg-purple-50 rounded-lg">
               <p className="text-sm text-purple-700 mb-2">{result.likelihood_explanation}</p>
-              <div className="text-xs text-purple-600 bg-purple-100 p-2 rounded">
+              
+              {/* Domain Fit Assessment */}
+              {result.domain_fit && (
+                <div className="mb-3 p-2 bg-white rounded border border-purple-200">
+                  <div className="flex items-center space-x-2 mb-1">
+                    <span className="text-xs font-medium text-purple-600">Domain Fit:</span>
+                    <span className={`text-xs px-2 py-1 rounded-full ${
+                      result.domain_fit.fit_level === 'good' ? 'bg-green-100 text-green-700' :
+                      result.domain_fit.fit_level === 'moderate' ? 'bg-yellow-100 text-yellow-700' :
+                      'bg-red-100 text-red-700'
+                    }`}>
+                      {result.domain_fit.fit_level === 'good' ? '✓ Good' :
+                       result.domain_fit.fit_level === 'moderate' ? '⚠ Moderate' :
+                       '✗ Poor'}
+                    </span>
+                  </div>
+                  <p className="text-xs text-gray-600">{result.domain_fit.description}</p>
+                </div>
+              )}
+              
+              {/* Improvement Suggestions */}
+              {result.likelihood_improvements && result.likelihood_improvements.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-purple-600 mb-2">Quick Wins to Improve Your Chances:</p>
+                  {result.likelihood_improvements.slice(0, 3).map((improvement: any, index: number) => (
+                    <div key={index} className="text-xs bg-white p-2 rounded border border-purple-200">
+                      <div className="font-medium text-gray-800 mb-1">{improvement.category}</div>
+                      <div className="text-gray-600 mb-1">{improvement.suggestion}</div>
+                      <div className="text-purple-600">{improvement.impact}</div>
+                    </div>
+                  ))}
+                </div>
+              )}
+              
+              <div className="text-xs text-purple-600 bg-purple-100 p-2 rounded mt-2">
                 <strong>Reality Check:</strong> Most job postings receive 100-500+ applications. Only 2-5% typically get any response.
               </div>
             </div>

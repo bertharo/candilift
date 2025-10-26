@@ -468,14 +468,21 @@ class AnalysisEngine:
             'present_skills': list(resume_skills_set.intersection(job_skills_set))
         }
         
-        # Calculate likelihood of hearing back
-        likelihood_score = self._calculate_likelihood_score(ats_result['score'], recruiter_result['score'])
+        # Calculate likelihood of hearing back with domain fit assessment
+        likelihood_result = self._calculate_likelihood_score(
+            ats_result['score'], 
+            recruiter_result['score'], 
+            resume_data, 
+            job_data
+        )
         
         return {
             'ats_score': ats_result['score'],
             'recruiter_score': recruiter_result['score'],
-            'likelihood_score': likelihood_score['score'],
-            'likelihood_explanation': likelihood_score['explanation'],
+            'likelihood_score': likelihood_result['score'],
+            'likelihood_explanation': likelihood_result['explanation'],
+            'likelihood_improvements': likelihood_result['improvements'],
+            'domain_fit': likelihood_result['domain_fit'],
             'score_drivers': ats_result['drivers'] + recruiter_result['drivers'],
             'recommendations': recommendations,
             'gap_analysis': gap_analysis,
@@ -487,39 +494,148 @@ class AnalysisEngine:
             }
         }
     
-    def _calculate_likelihood_score(self, ats_score: int, recruiter_score: int) -> Dict[str, Any]:
-        """Calculate realistic likelihood of hearing back based on harsh job market reality"""
+    def _calculate_likelihood_score(self, ats_score: int, recruiter_score: int, resume_data: Dict, job_data: Dict) -> Dict[str, Any]:
+        """Calculate realistic likelihood with domain fit assessment and improvement suggestions"""
         
         # Weighted combination: ATS (60%) + Recruiter (40%)
-        # ATS is weighted higher because it's the first filter
         weighted_score = (ats_score * 0.6) + (recruiter_score * 0.4)
         
-        # Apply harsh market reality factors
-        # Industry average: Only 2-5% of applications get ANY response
-        # Even excellent resumes face massive competition
-        market_adjustment = 0.15  # Only 15% of theoretical score due to extreme competition
+        # Domain fit assessment
+        domain_fit = self._assess_domain_fit(resume_data, job_data)
         
-        # Additional penalty for common issues
+        # Apply harsh market reality factors
+        market_adjustment = 0.15  # Only 15% of theoretical score due to extreme competition
         competition_penalty = 0.8  # 80% penalty for typical job market competition
         
-        final_score = int(weighted_score * market_adjustment * competition_penalty)
+        # Apply domain fit penalty if poor match
+        if domain_fit['fit_level'] == 'poor':
+            domain_penalty = 0.5  # 50% penalty for poor domain fit
+        elif domain_fit['fit_level'] == 'moderate':
+            domain_penalty = 0.8  # 20% penalty for moderate fit
+        else:
+            domain_penalty = 1.0  # No penalty for good fit
         
-        # Cap at realistic maximum (even perfect resumes rarely get responses)
-        final_score = min(final_score, 25)
+        final_score = int(weighted_score * market_adjustment * competition_penalty * domain_penalty)
+        final_score = min(final_score, 25)  # Cap at realistic maximum
         
-        # Generate brutally honest explanations
-        if final_score >= 20:
+        # Generate explanations and improvements
+        explanation, improvements = self._generate_likelihood_feedback(final_score, domain_fit, resume_data, job_data)
+        
+        return {
+            'score': final_score,
+            'explanation': explanation,
+            'improvements': improvements,
+            'domain_fit': domain_fit
+        }
+    
+    def _assess_domain_fit(self, resume_data: Dict, job_data: Dict) -> Dict[str, Any]:
+        """Assess how well the candidate's background matches the job domain"""
+        
+        resume_skills = set(resume_data['skills'])
+        job_skills = set()
+        for category_skills in job_data['required_skills'].values():
+            job_skills.update(category_skills)
+        
+        # Calculate skill overlap
+        skill_overlap = len(resume_skills.intersection(job_skills))
+        total_job_skills = len(job_skills)
+        
+        if total_job_skills == 0:
+            overlap_ratio = 0
+        else:
+            overlap_ratio = skill_overlap / total_job_skills
+        
+        # Assess experience level match
+        resume_years = resume_data['experience']['years_experience']
+        job_years = job_data['requirements']['years_experience_required']
+        
+        # Determine fit level
+        if overlap_ratio >= 0.7 and resume_years >= job_years * 0.8:
+            fit_level = 'good'
+            fit_description = "Strong domain alignment with relevant skills and experience"
+        elif overlap_ratio >= 0.4 and resume_years >= job_years * 0.5:
+            fit_level = 'moderate'
+            fit_description = "Some relevant skills but may need additional experience or training"
+        else:
+            fit_level = 'poor'
+            fit_description = "Limited domain alignment - consider roles more closely matching your background"
+        
+        return {
+            'fit_level': fit_level,
+            'description': fit_description,
+            'skill_overlap_ratio': overlap_ratio,
+            'skill_overlap_count': skill_overlap,
+            'total_job_skills': total_job_skills,
+            'experience_match': resume_years >= job_years * 0.8 if job_years > 0 else True
+        }
+    
+    def _generate_likelihood_feedback(self, score: int, domain_fit: Dict, resume_data: Dict, job_data: Dict) -> tuple:
+        """Generate explanation and improvement suggestions for likelihood score"""
+        
+        # Base explanation
+        if score >= 20:
             explanation = "Above average chance, but still low. Even excellent resumes face 100+ competitors per role."
-        elif final_score >= 15:
+        elif score >= 15:
             explanation = "Below average chance. Most applications get no response due to overwhelming competition."
-        elif final_score >= 10:
+        elif score >= 10:
             explanation = "Very low chance. Significant improvements needed to stand out from hundreds of applicants."
-        elif final_score >= 5:
+        elif score >= 5:
             explanation = "Minimal chance. Resume needs major improvements to be competitive in today's market."
         else:
             explanation = "Extremely low chance. Resume likely won't pass initial screening in competitive market."
         
-        return {
-            'score': final_score,
-            'explanation': explanation
-        }
+        # Add domain fit context
+        if domain_fit['fit_level'] == 'poor':
+            explanation += f" Additionally, {domain_fit['description'].lower()}"
+        elif domain_fit['fit_level'] == 'moderate':
+            explanation += f" Note: {domain_fit['description'].lower()}"
+        
+        # Generate specific improvements
+        improvements = []
+        
+        # Domain fit improvements
+        if domain_fit['fit_level'] == 'poor':
+            improvements.append({
+                'category': 'Domain Alignment',
+                'suggestion': 'Consider applying to roles that better match your current skills and experience',
+                'impact': 'High - Better fit roles will have much higher response rates',
+                'alternative': 'Look for jobs in your current domain or adjacent fields'
+            })
+        
+        # Skill gap improvements
+        missing_skills = job_data['required_skills']
+        if missing_skills:
+            top_missing = []
+            for category, skills in missing_skills.items():
+                top_missing.extend(skills[:2])  # Top 2 from each category
+            
+            if top_missing:
+                improvements.append({
+                    'category': 'Skills Development',
+                    'suggestion': f'Learn or highlight: {", ".join(top_missing[:3])}',
+                    'impact': 'Medium - Adding key skills can significantly improve your chances',
+                    'alternative': 'Take online courses or projects to demonstrate these skills'
+                })
+        
+        # Experience improvements
+        resume_years = resume_data['experience']['years_experience']
+        job_years = job_data['requirements']['years_experience_required']
+        
+        if resume_years < job_years and job_years > 0:
+            improvements.append({
+                'category': 'Experience Gap',
+                'suggestion': f'Highlight transferable experience and quantify achievements',
+                'impact': 'Medium - Show how your experience applies to this role',
+                'alternative': 'Consider entry-level or mid-level positions in this field'
+            })
+        
+        # Format improvements
+        if not resume_data['format']['has_summary']:
+            improvements.append({
+                'category': 'Resume Format',
+                'suggestion': 'Add a professional summary highlighting relevant experience',
+                'impact': 'Low-Medium - Helps recruiters quickly understand your fit',
+                'alternative': 'Use the summary to bridge domain gaps'
+            })
+        
+        return explanation, improvements
