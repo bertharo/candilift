@@ -7,6 +7,7 @@ import AnalysisResults from '../components/AnalysisResults'
 export default function Home() {
   const [analysisResult, setAnalysisResult] = useState<any>(null)
   const [isLoading, setIsLoading] = useState(false)
+  const [lastFormData, setLastFormData] = useState<FormData | null>(null)
 
   const handleAnalysis = async (formData: FormData) => {
     setIsLoading(true)
@@ -32,6 +33,7 @@ export default function Home() {
           if (response.ok) {
             const result = await response.json()
             setAnalysisResult(result)
+            setLastFormData(formData) // Store form data for downloads
             return // Success, exit the function
           } else {
             console.error(`API ${baseUrl} returned status: ${response.status}`)
@@ -99,6 +101,98 @@ export default function Home() {
     }
   }
 
+  const handleDownloadReport = async () => {
+    if (!lastFormData) {
+      alert('Please analyze your resume first')
+      return
+    }
+
+    try {
+      const API_URLS = [
+        process.env.NEXT_PUBLIC_API_URL || 'https://rats-h0z1.onrender.com',
+        'https://rats-h0z1.onrender.com',
+        'https://candilift-api.onrender.com',
+        'http://localhost:8000'
+      ]
+      
+      for (const baseUrl of API_URLS) {
+        try {
+          const response = await fetch(`${baseUrl}/download-report`, {
+            method: 'POST',
+            body: lastFormData,
+          })
+
+          if (response.ok) {
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'candilift_report.pdf'
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+            return
+          }
+        } catch (error) {
+          console.error(`Report download failed for ${baseUrl}:`, error)
+          continue
+        }
+      }
+      
+      alert('Failed to download report. Please try again.')
+    } catch (error) {
+      console.error('Report download error:', error)
+      alert('Failed to download report. Please try again.')
+    }
+  }
+
+  const handleGenerateResume = async () => {
+    if (!lastFormData) {
+      alert('Please analyze your resume first')
+      return
+    }
+
+    try {
+      const API_URLS = [
+        process.env.NEXT_PUBLIC_API_URL || 'https://rats-h0z1.onrender.com',
+        'https://rats-h0z1.onrender.com',
+        'https://candilift-api.onrender.com',
+        'http://localhost:8000'
+      ]
+      
+      for (const baseUrl of API_URLS) {
+        try {
+          const response = await fetch(`${baseUrl}/generate-resume`, {
+            method: 'POST',
+            body: lastFormData,
+          })
+
+          if (response.ok) {
+            const blob = await response.blob()
+            const url = window.URL.createObjectURL(blob)
+            const a = document.createElement('a')
+            a.href = url
+            a.download = 'improved_resume.docx'
+            document.body.appendChild(a)
+            a.click()
+            window.URL.revokeObjectURL(url)
+            document.body.removeChild(a)
+            return
+          }
+        } catch (error) {
+          console.error(`Resume generation failed for ${baseUrl}:`, error)
+          continue
+        }
+      }
+      
+      alert('Failed to generate resume. Please try again.')
+    } catch (error) {
+      console.error('Resume generation error:', error)
+      alert('Failed to generate resume. Please try again.')
+    }
+  }
+
   return (
     <main className="min-h-screen bg-gradient-to-br from-slate-50 via-white to-slate-100">
       {/* Hero Section */}
@@ -149,7 +243,11 @@ export default function Home() {
         />
         
         {analysisResult && (
-          <AnalysisResults result={analysisResult} />
+          <AnalysisResults 
+            result={analysisResult} 
+            onDownloadReport={handleDownloadReport}
+            onGenerateResume={handleGenerateResume}
+          />
         )}
       </div>
 
