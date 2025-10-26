@@ -737,7 +737,7 @@ class AnalysisEngine:
                     'match_score': int(job['match_score']),
                     'description': job['description'],
                     'experience_level': f"{job['experience_range'][0]}-{job['experience_range'][1]} years",
-                    'required_skills': job['required_skills'][:3],
+                    'required_skills': self._get_most_relevant_skills(job['required_skills'], resume_skills),
                     'match_reason': self._get_match_reason(job['match_score'], resume_skills, job['required_skills'])
                 })
         
@@ -770,6 +770,45 @@ class AnalysisEngine:
                 best_match = category.title()
         
         return best_match
+    
+    def _get_most_relevant_skills(self, job_skills: List[str], resume_skills: set) -> List[str]:
+        """Get the most relevant skills from job requirements, prioritizing core job skills"""
+        resume_skills_lower = {skill.lower() for skill in resume_skills}
+        
+        # Define core programming languages and frameworks that should be prioritized
+        core_skills = ['go', 'python', 'javascript', 'java', 'c++', 'c#', 'rust', 'php', 'ruby', 'swift', 'kotlin']
+        frameworks = ['express', 'react', 'vue', 'angular', 'django', 'flask', 'spring', 'node.js']
+        
+        # Separate skills into categories
+        candidate_has = []
+        candidate_lacks_core = []
+        candidate_lacks_other = []
+        
+        for skill in job_skills:
+            skill_lower = skill.lower()
+            if skill_lower in resume_skills_lower:
+                candidate_has.append(skill)
+            elif skill_lower in core_skills or skill_lower in frameworks:
+                candidate_lacks_core.append(skill)
+            else:
+                candidate_lacks_other.append(skill)
+        
+        # Prioritize: candidate skills (max 2) + core missing skills (max 1) + other missing skills
+        relevant_skills = []
+        
+        # Add skills candidate has (up to 2)
+        relevant_skills.extend(candidate_has[:2])
+        
+        # Add core missing skills (up to 1)
+        if len(relevant_skills) < 3 and candidate_lacks_core:
+            relevant_skills.append(candidate_lacks_core[0])
+        
+        # Fill remaining slots with other missing skills
+        if len(relevant_skills) < 3:
+            remaining = candidate_lacks_other + candidate_lacks_core[1:]
+            relevant_skills.extend(remaining[:3-len(relevant_skills)])
+        
+        return relevant_skills[:3]
     
     def _get_generic_recommendations(self, resume_skills: set, resume_years: int) -> List[Dict[str, Any]]:
         """Fallback to generic job recommendations when no specific job is provided"""
